@@ -2,21 +2,21 @@ cmake_minimum_required(VERSION 3.27.4)
 
 project(groebner_basis)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -Wall")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-set(BOOST_INCLUDE_LIBRARIES rational)
-add_subdirectory(deps/boost EXCLUDE_FROM_ALL)
+set(SOURCE_EXE src/main.cpp)
+# set(GROEBNER_LIB src/groebner_basis.cpp)
 
-set(SOURCE_EXE main.cpp)
-set(GROEBNER_LIB groebner_basis.cpp)
-set(HELP_LIB tostringhelper.cpp)
+set(Boost_USE_STATIC_LIBS        ON)  # only find static libs
+set(Boost_USE_DEBUG_LIBS        OFF)  # ignore debug libs and
+set(Boost_USE_RELEASE_LIBS       ON)  # only find release libs
+set(Boost_USE_MULTITHREADED      ON)
+set(Boost_USE_STATIC_RUNTIME     ON)  # link Boost Static libraries
 
+find_package(Boost)
+include_directories( ${Boost_INCLUDE_DIRS} )
 
-add_library(groebner_basis STATIC ${GROEBNER_LIB})
-add_library(tostringhelper STATIC ${HELP_LIB})
+# add_library(groebner_basis STATIC ${GROEBNER_LIB})
 add_executable(main ${SOURCE_EXE})
-
-target_link_libraries(main groebner_basis Boost::rational)
-target_link_libraries(groebner_basis tostringhelper)
-target_link_libraries(tostringhelper Boost::rational)
 

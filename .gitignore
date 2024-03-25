@@ -1,5 +1,4 @@
 build/
 asan_build/
 .vscode
-deps/
 .cache/
