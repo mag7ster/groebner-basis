@@ -16,13 +16,28 @@ public:
         return coef_;
     }
 
+    Term<Field> operator/(const Term<Field>& other) {
+        return Term<Field>(coef_ / other.coef_,
+                           static_cast<const Monom&>(*this) / static_cast<const Monom&>(other));
+    }
+
+    Term<Field> operator*(const Term<Field>& other) {
+        return Term<Field>(coef_ * other.coef_,
+                           static_cast<const Monom&>(*this) * static_cast<const Monom&>(other));
+    }
+
 private:
     Field coef_;
 };
 
+template <typename Field>
+bool IsDeegreesEqual(const Term<Field>& m1, const Term<Field>& m2) {
+    return static_cast<const Monom>(m1) == static_cast<const Monom>(m2);
+}
+
 template <typename Stream, typename Field>
 Stream& operator<<(Stream& stream, const Term<Field>& term) {
-    stream << term.GetCoefficient() << "*" << static_cast<Monom>(term);
+    stream << term.GetCoefficient() << "*" << static_cast<const Monom&>(term);
     return stream;
 }
 

@@ -1,6 +1,5 @@
 
 #include "term.h"
-#include <optional>
 
 namespace groebner_basis {
 
@@ -45,16 +44,13 @@ public:
         return data_.front();
     }
 
-    const std::vector<Term<Field>>& GetTerms() const {
-        return data_;
+    auto begin() const {  // NOLINT
+        return data_.begin();
     }
 
-    friend std::optional<Term<Field>> FindDivisibleTerm(const Polynom<Field>& f,
-                                                        const Term<Field>& t);
-
-    template <typename Functor>
-    friend std::optional<Polynom<Field>> ElementaryReduction(Polynom<Field> f, Polynom<Field> g,
-                                                             Functor order);
+    auto end() const {  // NOLINT
+        return data_.end();
+    }
 
 private:
     std::vector<Term<Field>> data_;
@@ -63,7 +59,7 @@ private:
 template <typename Stream, typename Field, typename Order>
 Stream& operator<<(Stream& stream, const Polynom<Field, Order>& poly) {
     stream << poly.GetFirstTerm();
-    for (auto it = poly.GetTerms().begin() + 1; it != poly.GetTerms().end(); ++it) {
+    for (auto it = poly.begin() + 1; it != poly.end(); ++it) {
         stream << " + " << *it;
     }
     return stream;

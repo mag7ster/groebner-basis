@@ -1,6 +1,7 @@
 #include "groebner_basis.h"
 #include <boost/rational.hpp>
 #include <iostream>
+#include <vector>
 
 using Fraction = boost::rational<int64_t>;
 
@@ -13,6 +14,7 @@ int main() {
     std::cout << t2 << "\n";
     std::cout << groebner_basis::LexOrder()(t1, t2) << "\n";
     std ::cout << t2.IsDivisibleBy(t1) << "\n";
-    std::cout << "kek\n";
+    auto res = groebner_basis::ElementaryReduction(a, a);
     std ::cout << a << "\n";
+    std::vector<unsigned int> vec({1, 3, 3, 7});
 }
