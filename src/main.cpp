@@ -14,11 +14,11 @@ int main() {
     std::cout << t2 << "\n";
     std::cout << groebner_basis::LexOrder()(t1, t2) << "\n";
     std ::cout << t2.IsDivisibleBy(t1) << "\n";
-    auto res = groebner_basis::ElementaryReduction(a, a);
+
     std ::cout << a << "\n";
     std ::cout << b << "\n";
     std::cout << a + b << "\n";
-    // std::cout << groebner_basis::operator*(a, b) << "\n";
+
     std::cout << a * b << "\n";
     std::cout << a - b << "\n";
 
@@ -30,4 +30,11 @@ int main() {
 
     std::cout << a - t2 << "\n";
     std::cout << t2 - a << "\n";
+
+    std::cout << "Self -\n";
+    std::cout << a - a << "\n";
+
+    std::cout << "Elem\n";
+    auto res = groebner_basis::ElementaryReduction(a, a);
+    std::cout << res.value() << "\n";
 }

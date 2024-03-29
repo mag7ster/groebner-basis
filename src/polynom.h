@@ -1,6 +1,4 @@
-#include <algorithm>
 #include <iterator>
-#include <vector>
 #include "term.h"
 
 namespace groebner_basis {
@@ -77,6 +75,10 @@ public:
         return data_.size();
     }
 
+    bool IsZero() const {
+        return data_.empty();
+    }
+
     Polynom operator-() const {
         std::vector<Term<Field>> data;
         data.reserve(data_.size());
@@ -135,9 +137,13 @@ Polynom<Field, Order> operator-(Term<Field> t, const Polynom<Field, Order>& p) {
 
 template <typename Stream, typename Field, typename Order>
 Stream& operator<<(Stream& stream, const Polynom<Field, Order>& poly) {
-    stream << poly.GetFirstTerm();
-    for (auto it = poly.begin() + 1; it != poly.end(); ++it) {
-        stream << " + " << *it;
+    if (poly.IsZero()) {
+        stream << "0";
+    } else {
+        stream << poly.GetFirstTerm();
+        for (auto it = poly.begin() + 1; it != poly.end(); ++it) {
+            stream << " + " << *it;
+        }
     }
     return stream;
 }

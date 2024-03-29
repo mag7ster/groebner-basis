@@ -36,12 +36,15 @@ private:
 
 template <typename Field>
 bool IsDeegreesEqual(const Term<Field>& m1, const Term<Field>& m2) {
-    return static_cast<const Monom>(m1) == static_cast<const Monom>(m2);
+    return static_cast<const Monom&>(m1) == static_cast<const Monom&>(m2);
 }
 
 template <typename Stream, typename Field>
 Stream& operator<<(Stream& stream, const Term<Field>& term) {
-    stream << term.GetCoefficient() << "*" << static_cast<const Monom&>(term);
+    stream << term.GetCoefficient();
+    if (term.CountDegrees() != 0) {
+        stream << "*" << static_cast<const Monom&>(term);
+    }
     return stream;
 }
 
