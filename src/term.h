@@ -16,14 +16,18 @@ public:
         return coef_;
     }
 
-    Term<Field> operator/(const Term<Field>& other) {
+    Term<Field> operator/(const Term<Field>& other) const {
         return Term<Field>(coef_ / other.coef_,
                            static_cast<const Monom&>(*this) / static_cast<const Monom&>(other));
     }
 
-    Term<Field> operator*(const Term<Field>& other) {
+    Term<Field> operator*(const Term<Field>& other) const {
         return Term<Field>(coef_ * other.coef_,
                            static_cast<const Monom&>(*this) * static_cast<const Monom&>(other));
+    }
+
+    Term<Field> operator-() const {
+        return Term<Field>(-coef_, static_cast<const Monom&>(*this));
     }
 
 private:

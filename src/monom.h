@@ -43,6 +43,9 @@ public:
     }
 
     Degree operator[](size_t index) const {
+        if (index >= degrees_.size()) {
+            return 0;
+        }
         return degrees_[index];
     }
 
@@ -73,7 +76,7 @@ public:
         return degrees_.size();
     }
 
-    Monom operator/(const Monom& other) {
+    Monom operator/(const Monom& other) const {
 
         assert(IsDivisibleBy(other));
 
@@ -90,7 +93,7 @@ public:
         return Monom(newdegrees);
     }
 
-    Monom operator*(const Monom& other) {
+    Monom operator*(const Monom& other) const {
 
         size_t size = std::max(CountDegrees(), other.CountDegrees());
 
@@ -102,10 +105,8 @@ public:
         return Monom(newdegrees);
     }
 
-    friend bool IsDeegreesEqual(const Monom& m1, const Monom& m2);
-
 private:
-    size_t CalcQuotientSize(const Monom& other) {
+    size_t CalcQuotientSize(const Monom& other) const {
         size_t size = 0;
         for (size_t i = 0; i < CountDegrees(); ++i) {
             if ((*this)[i] != other[i]) {
@@ -120,14 +121,6 @@ private:
 
     std::vector<Degree> degrees_;
 };
-
-Monom operator*(const Monom& first, const Monom& second) {
-    return Monom({});
-}
-
-Monom operator/(const Monom& first, const Monom& second) {
-    return Monom({});
-}
 
 template <typename Stream>
 Stream& operator<<(Stream& stream, const Monom& monom) {
