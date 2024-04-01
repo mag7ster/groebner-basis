@@ -18,13 +18,13 @@ template <typename Field, typename Order>
 std::optional<Polynom<Field, Order>> ElementaryReduction(const Polynom<Field, Order> &f,
                                                          const Polynom<Field, Order> &g) {
 
-    std::optional<Term<Field>> res = FindDivisibleTerm(f, g.GetFirstTerm());
+    std::optional<Term<Field>> res = FindDivisibleTerm(f, g.GetLargestTerm());
     if (res == std::nullopt) {
         return std::nullopt;
     }
 
     Term<Field> divisible_term = res.value();
-    Term<Field> t = divisible_term / g.GetFirstTerm();
+    Term<Field> t = divisible_term / g.GetLargestTerm();
 
     return f - t * g;
 }

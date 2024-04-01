@@ -30,7 +30,7 @@ public:
     Polynom(const Term<Field>& term) : data_(ReduceSimilar({term})) {
     }
 
-    const Term<Field>& GetFirstTerm() const {
+    const Term<Field>& GetLargestTerm() const {
         return data_.front();
     }
 
@@ -63,13 +63,15 @@ public:
 
     friend Polynom operator*(const Polynom& first, const Polynom& second) {
         std::vector<Term<Field>> result;
+        result.reserve(first.TermsCount() * second.TermsCount());
+
         for (const auto& t1 : first) {
             for (const auto& t2 : second) {
                 result.push_back(t1 * t2);
             }
         }
-        std::sort(result.begin(), result.end(), Order());
-        return Polynom(ReduceSimilar(std::move(result)));
+
+        return Polynom(OrderAndReduceVector(std::move(result)));
     }
 
     friend Polynom operator+(const Polynom& first, const Polynom& second) {
@@ -128,7 +130,7 @@ Stream& operator<<(Stream& stream, const Polynom<Field, Order>& poly) {
     if (poly.IsZero()) {
         stream << "0";
     } else {
-        stream << poly.GetFirstTerm();
+        stream << poly.GetLargestTerm();
         for (auto it = poly.begin() + 1; it != poly.end(); ++it) {
             stream << " + " << *it;
         }
