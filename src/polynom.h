@@ -1,62 +1,33 @@
+#include <algorithm>
+#include <cstddef>
 #include <iterator>
 #include "term.h"
 
 namespace groebner_basis {
 
-template <typename Field>
-struct NotConstructedTerm {
-
-    Field coefficient;
-    std::initializer_list<Degree> degrees;
-};
-
-template <typename Field>
-static std::vector<Term<Field>> ReduceSimilarInVectorForPolynom(std::vector<Term<Field>> data) {
-
-    for (auto it = data.begin(); it != data.end(); ++it) {
-        while ((it + 1) != data.end() && IsDeegreesEqual(*it, *(it + 1))) {
-            *it = Term<Field>(it->GetCoefficient() + (it + 1)->GetCoefficient(), *it);
-            data.erase(it + 1);
-        }
-        if (it->GetCoefficient() == 0) {
-            it--;
-            data.erase(it + 1);
-        }
-    }
-    return data;
-}
-
-template <typename Field>
-static std::vector<Term<Field>> CreateVectorFromInitializerList(
-    const std::initializer_list<NotConstructedTerm<Field>>& terms_list) {
-
-    std::vector<Term<Field>> data;
-    data.reserve(terms_list.size());
-
-    for (auto it = terms_list.begin(); it != terms_list.end(); ++it) {
-        data.emplace_back(it->coefficient, it->degrees);
-    }
-
-    return data;
-}
-
-template <typename Field, typename Order>
-static std::vector<Term<Field>> CreateOrderedVector(
-    const std::initializer_list<NotConstructedTerm<Field>>& terms_list) {
-
-    std::vector<Term<Field>> data = CreateVectorFromInitializerList(terms_list);
-    std::sort(data.begin(), data.end(), Order());
-    return ReduceSimilarInVectorForPolynom<Field>(data);
-}
-
 template <typename Field, typename Order = LexOrder>
 class Polynom {
 public:
-    Polynom(const std::initializer_list<NotConstructedTerm<Field>>& terms_list)
-        : data_(CreateOrderedVector<Field, Order>(terms_list)) {
+    class Builder {
+    public:
+        Builder&& AddTerm(const Field& coef,
+                          const std::initializer_list<Monom::Degree>& degrees_list) {
+            raw_data_.emplace_back(coef, degrees_list);
+            return std::move(*this);
+        }
+
+        std::vector<Term<Field>>&& GetMovedRawData() {
+            return std::move(raw_data_);
+        }
+
+    private:
+        std::vector<Term<Field>> raw_data_;
+    };
+
+    Polynom(Builder&& builder) : data_(OrderAndReduceVector(std::move(builder.GetMovedRawData()))) {
     }
 
-    Polynom(const Term<Field>& term) : data_(ReduceSimilarInVectorForPolynom<Field>({term})) {
+    Polynom(const Term<Field>& term) : data_(ReduceSimilar({term})) {
     }
 
     const Term<Field>& GetFirstTerm() const {
@@ -87,53 +58,70 @@ public:
             data.emplace_back(-t);
         }
 
-        return Polynom(data);
+        return Polynom(std::move(data));
     }
 
-    Polynom operator*(const Polynom& other) const {
+    friend Polynom operator*(const Polynom& first, const Polynom& second) {
         std::vector<Term<Field>> result;
-        for (const auto& t1 : (*this)) {
-            for (const auto& t2 : other) {
+        for (const auto& t1 : first) {
+            for (const auto& t2 : second) {
                 result.push_back(t1 * t2);
             }
         }
         std::sort(result.begin(), result.end(), Order());
-        return Polynom(ReduceSimilarInVectorForPolynom<Field>(result));
+        return Polynom(ReduceSimilar(std::move(result)));
     }
 
-    Polynom operator+(const Polynom& other) const {
+    friend Polynom operator+(const Polynom& first, const Polynom& second) {
         std::vector<Term<Field>> result;
+        result.reserve(first.TermsCount() + second.TermsCount());
 
-        std::merge(this->begin(), this->end(), other.begin(), other.end(),
+        std::merge(first.begin(), first.end(), second.begin(), second.end(),
                    std::back_inserter(result), Order());
-        return Polynom(ReduceSimilarInVectorForPolynom<Field>(result));
+        return Polynom(ReduceSimilar(std::move(result)));
     }
 
-    Polynom operator-(const Polynom& other) const {
-        return (*this) + (-other);
+    friend Polynom operator-(const Polynom& first, const Polynom& second) {
+        return first + (-second);
     }
 
 private:
-    Polynom(const std::vector<Term<Field>>& prepared_vec) : data_(prepared_vec) {
+    static std::vector<Term<Field>> ReduceSimilar(std::vector<Term<Field>>&& data) {
+
+        data.erase(std::unique(data.begin(), data.end(),
+                               [](Term<Field>& first, const Term<Field>& second) {
+                                   if (first.GetMonom() == second.GetMonom()) {
+                                       first =
+                                           Term(first.GetCoefficient() + second.GetCoefficient(),
+                                                first.GetMonom());
+                                       return true;
+                                   }
+                                   return false;
+                               }),
+                   data.end());  // Я не уверен, что это не уб. на cppreference сказано только что
+                                 // если предикат не устанавливает отношения эквивалентности то
+                                 // поведение неопределено. у меня отношение эквивалентности
+                                 // сохраняется, хоть и коэффициенты меняются
+
+        data.erase(
+            std::remove_if(data.begin(), data.end(),
+                           [](const Term<Field>& term) { return term.GetCoefficient() == 0; }),
+            data.end());
+
+        return std::move(data);
+    }
+
+    static std::vector<Term<Field>> OrderAndReduceVector(std::vector<Term<Field>>&& data) {
+
+        std::sort(data.begin(), data.end(), Order());
+        return ReduceSimilar(std::move(data));
+    }
+
+    Polynom(std::vector<Term<Field>>&& prepared_vec) : data_(std::move(prepared_vec)) {
     }
 
     const std::vector<Term<Field>> data_;
 };
-
-template <typename Field, typename Order>
-Polynom<Field, Order> operator*(Term<Field> t, const Polynom<Field, Order>& p) {
-    return p * t;
-}
-
-template <typename Field, typename Order>
-Polynom<Field, Order> operator+(Term<Field> t, const Polynom<Field, Order>& p) {
-    return p + t;
-}
-
-template <typename Field, typename Order>
-Polynom<Field, Order> operator-(Term<Field> t, const Polynom<Field, Order>& p) {
-    return -(p - t);
-}
 
 template <typename Stream, typename Field, typename Order>
 Stream& operator<<(Stream& stream, const Polynom<Field, Order>& poly) {

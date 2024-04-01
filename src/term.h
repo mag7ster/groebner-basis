@@ -16,34 +16,31 @@ public:
         return coef_;
     }
 
+    const Monom& GetMonom() const {
+        return *this;
+    }
+
     Term<Field> operator/(const Term<Field>& other) const {
-        return Term<Field>(coef_ / other.coef_,
-                           static_cast<const Monom&>(*this) / static_cast<const Monom&>(other));
+        return Term<Field>(coef_ / other.coef_, this->GetMonom() / other.GetMonom());
     }
 
     Term<Field> operator*(const Term<Field>& other) const {
-        return Term<Field>(coef_ * other.coef_,
-                           static_cast<const Monom&>(*this) * static_cast<const Monom&>(other));
+        return Term<Field>(coef_ * other.coef_, this->GetMonom() * other.GetMonom());
     }
 
     Term<Field> operator-() const {
-        return Term<Field>(-coef_, static_cast<const Monom&>(*this));
+        return Term<Field>(-coef_, this->GetMonom());
     }
 
 private:
     Field coef_;
 };
 
-template <typename Field>
-bool IsDeegreesEqual(const Term<Field>& m1, const Term<Field>& m2) {
-    return static_cast<const Monom&>(m1) == static_cast<const Monom&>(m2);
-}
-
 template <typename Stream, typename Field>
 Stream& operator<<(Stream& stream, const Term<Field>& term) {
     stream << term.GetCoefficient();
-    if (term.CountDegrees() != 0) {
-        stream << "*" << static_cast<const Monom&>(term);
+    if (term.CountSignificantDegrees() != 0) {
+        stream << "*" << term.GetMonom();
     }
     return stream;
 }

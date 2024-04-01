@@ -5,7 +5,9 @@
 using Fraction = boost::rational<int64_t>;
 
 int main() {
-    groebner_basis::Polynom<Fraction> a({{1, {2, 3}}, {4, {5, 6}}, {4, {5, 6, 0}}});
+    groebner_basis::Polynom<Fraction> a =
+        groebner_basis::Polynom<Fraction>::Builder().AddTerm(1, {2, 3}).AddTerm(4, {5, 6}).AddTerm(
+            4, {5, 6});
     groebner_basis::Monom m1({1, 2, 3, 0, 0});
     groebner_basis::Term<Fraction> t1(1, {2, 3}), t2(2, {3, 4});
     groebner_basis::Polynom<Fraction> b = t1;

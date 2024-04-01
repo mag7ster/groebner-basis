@@ -1,87 +1,68 @@
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <functional>
+#include <iterator>
+#include <memory>
 #include <vector>
 #include <initializer_list>
 
 namespace groebner_basis {
 
-using Degree = unsigned int;
-
-static std::vector<Degree> CreateDegrees(const std::initializer_list<Degree>& degrees_list) {
-
-    size_t size = 0, zeros = 0;
-
-    for (const auto& elem : degrees_list) {
-        if (elem == 0) {
-            ++zeros;
-        } else {
-            size += zeros + 1;
-            zeros = 0;
-        }
-    }
-
-    std::vector<Degree> degrees(size);
-    for (auto it = degrees_list.begin(); it != degrees_list.end(); ++it) {
-        degrees[it - degrees_list.begin()] = *it;
-    }
-
-    return degrees;
-}
-
 class Monom {
 public:
+    using Degree = unsigned int;
+
     explicit Monom(const std::initializer_list<Degree>& degrees_list)
-        : degrees_(CreateDegrees(degrees_list)) {
+        : degrees_(std::make_shared<std::vector<Degree>>(TrimTrailingZeros(degrees_list))) {
     }
 
     auto begin() const {  // NOLINT
-        return degrees_.begin();
+        return degrees_->begin();
     }
 
     auto end() const {  // NOLINT
-        return degrees_.end();
+        return degrees_->end();
     }
 
     Degree operator[](size_t index) const {
-        if (index >= degrees_.size()) {
+        if (index >= degrees_->size()) {
             return 0;
         }
-        return degrees_[index];
+        return degrees_->at(index);
     }
 
     bool operator==(const Monom& other) const {
-        return degrees_ == other.degrees_;
+        return *degrees_ == *other.degrees_;
     }
 
     bool operator!=(const Monom& other) const {
-        return degrees_ != other.degrees_;
+        return !(*this == other);
     }
 
     bool IsDivisibleBy(const Monom& divisor) const {
 
-        if (CountDegrees() < divisor.CountDegrees()) {
+        if (CountSignificantDegrees() < divisor.CountSignificantDegrees()) {
             return false;
         }
 
-        for (size_t i = 0; i < divisor.CountDegrees(); ++i) {
-            if (divisor[i] > (*this)[i]) {
-                return false;
-            }
-        }
-
-        return true;
+        return std::mismatch(divisor.begin(), divisor.end(), this->begin(), this->end(),
+                             [](Degree divisor_degree, Degree divident_degree) {
+                                 return divisor_degree <= divident_degree;
+                             })
+                   .first == divisor.end();
     }
 
-    size_t CountDegrees() const {
-        return degrees_.size();
+    size_t CountSignificantDegrees() const {
+        return degrees_->size();
     }
 
     Monom operator/(const Monom& other) const {
 
         assert(IsDivisibleBy(other));
 
-        size_t size = CountDegrees();
-        if (CountDegrees() == other.CountDegrees()) {
+        size_t size = CountSignificantDegrees();
+        if (CountSignificantDegrees() == other.CountSignificantDegrees()) {
             size = CalcQuotientSize(other);
         }
 
@@ -90,36 +71,60 @@ public:
             newdegrees[i] = (*this)[i] - other[i];
         }
 
-        return Monom(newdegrees);
+        return Monom(std::move(newdegrees));
     }
 
     Monom operator*(const Monom& other) const {
 
-        size_t size = std::max(CountDegrees(), other.CountDegrees());
+        size_t size = std::max(CountSignificantDegrees(), other.CountSignificantDegrees());
 
         std::vector<Degree> newdegrees(size);
         for (size_t i = 0; i < size; ++i) {
             newdegrees[i] = (*this)[i] + other[i];
         }
 
-        return Monom(newdegrees);
+        return Monom(std::move(newdegrees));
     }
 
 private:
     size_t CalcQuotientSize(const Monom& other) const {
-        size_t size = 0;
-        for (size_t i = 0; i < CountDegrees(); ++i) {
-            if ((*this)[i] != other[i]) {
-                size = i + 1;
-            }
-        }
+        // size_t size = 0;
+        // for (size_t i = 0; i < CountSignificantDegrees(); ++i) {
+        //     if ((*this)[i] != other[i]) {
+        //         size = i + 1;
+        //     }
+        // }
+        size_t size = std::mismatch(degrees_->rbegin(), degrees_->rend(), other.degrees_->rbegin(),
+                                    other.degrees_->rend())
+                          .first.base() -
+                      begin();
         return size;
     }
 
-    explicit Monom(const std::vector<Degree>& vec) : degrees_(vec) {
+    explicit Monom(std::vector<Degree>&& vec)
+        : degrees_(std::make_shared<std::vector<Degree>>(std::move(vec))) {
     }
 
-    std::vector<Degree> degrees_;
+    static std::vector<Degree> TrimTrailingZeros(
+        const std::initializer_list<Degree>& degrees_list) {
+
+        std::vector<Degree> zero = {0};
+
+        auto trailingzeros = std::find_end(degrees_list.begin(), degrees_list.end(), zero.begin(),
+                                           zero.end(), std::not_equal_to<Degree>());
+
+        if (trailingzeros == degrees_list.end()) {
+            trailingzeros = degrees_list.begin();
+        } else {
+            ++trailingzeros;
+        }
+
+        std::vector<Degree> degrees(std::distance(degrees_list.begin(), trailingzeros));
+
+        std::copy(degrees_list.begin(), trailingzeros, degrees.begin());
+        return degrees;
+    }
+    std::shared_ptr<std::vector<Degree>> degrees_;
 };
 
 template <typename Stream>
