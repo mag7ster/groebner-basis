@@ -41,5 +41,6 @@ int main() {
     std::cout << res.value() << "\n";
 
     groebner_basis::PolynomialsSet g({a, b});
-    a = ReductionByPolynomialsSet(a, {a, b});
+    auto res1 = ReductionByPolynomialsSet(a, {a, b});
+    std::cout << res1.value() << "\n";
 }

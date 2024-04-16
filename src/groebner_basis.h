@@ -30,27 +30,81 @@ std::optional<Polynom<Field, Order>> ElementaryReduction(const Polynom<Field, Or
 }
 
 template <typename Field, typename Order>
-Polynom<Field, Order> ReductionByPolynomialsSet(Polynom<Field, Order> f,
-                                                const PolynomialsSet<Field, Order> &set) {
+std::optional<Polynom<Field, Order>> ElementaryReductionWithRepeat(const Polynom<Field, Order> &f,
+                                                                   const Polynom<Field, Order> &g) {
 
-    size_t success_reductions;
+    std::optional<Polynom<Field, Order>> temp = ElementaryReduction(f, g);
+    if (!temp) {
+        return std::nullopt;
+    }
 
-    do {
+    Polynom<Field, Order> res;
+    while (temp) {
+        res = temp.value();
+        temp = ElementaryReduction(res, g);
+    }
 
-        success_reductions = 0;
+    return res;
+}
 
-        for (const auto &g : set) {
-            auto temp = ElementaryReduction(f, g);
-            while (temp) {
-                ++success_reductions;
-                f = temp.value();
-                temp = ElementaryReduction(f, g);
-            }
+template <typename Field, typename Order>
+static std::optional<Polynom<Field, Order>> TryReductionForOnePass(
+    const Polynom<Field, Order> &f, const PolynomialsSet<Field, Order> &set) {
+
+    Polynom<Field, Order> res = f;
+    bool success = false;
+
+    for (auto &g : set) {
+        auto temp = ElementaryReductionWithRepeat(res, g);
+        if (temp) {
+            success = true;
+            res = temp.value();
         }
+    }
 
-    } while (success_reductions);
+    if (!success) {
+        return std::nullopt;
+    }
 
-    return f;
+    return res;
+}
+
+template <typename Field, typename Order>
+std::optional<Polynom<Field, Order>> ReductionByPolynomialsSet(
+    const Polynom<Field, Order> &f, const PolynomialsSet<Field, Order> &set) {
+
+    std::optional<Polynom<Field, Order>> temp = TryReductionForOnePass(f, set);
+    if (!temp) {
+        return std::nullopt;
+    }
+
+    Polynom<Field, Order> res;
+    while (temp) {
+        res = temp.value();
+        temp = TryReductionForOnePass(res, set);
+    }
+
+    return res;
+}
+
+// not completed
+
+template <typename Field, typename Order>
+bool TryAutoReductionForOnePass(PolynomialsSet<Field, Order> *set) {
+    for (auto it = set->begin(); it != set->end(); ++it) {
+        auto f = *it;
+        set->Erase(it);
+        auto temp = ReductionByPolynomialsSet(f, set);
+        if (!temp) {
+            set->AddAt(it, f);
+        } else if (temp.value() != Term<Field>(0)) {
+            set->AddAt(it, f);
+        }
+    }
+}
+
+template <typename Field, typename Order>
+void AutoReduction(PolynomialsSet<Field, Order> *set) {
 }
 
 }  // namespace groebner_basis
