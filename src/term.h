@@ -20,16 +20,24 @@ public:
         return *this;
     }
 
-    Term<Field> operator/(const Term<Field>& other) const {
-        return Term<Field>(coef_ / other.coef_, this->GetMonom() / other.GetMonom());
+    Term operator/(const Term& other) const {
+        return Term(coef_ / other.coef_, this->GetMonom() / other.GetMonom());
     }
 
-    Term<Field> operator*(const Term<Field>& other) const {
-        return Term<Field>(coef_ * other.coef_, this->GetMonom() * other.GetMonom());
+    Term operator*(const Term& other) const {
+        return Term(coef_ * other.coef_, this->GetMonom() * other.GetMonom());
     }
 
-    Term<Field> operator-() const {
-        return Term<Field>(-coef_, this->GetMonom());
+    Term operator-() const {
+        return Term(-coef_, this->GetMonom());
+    }
+
+    bool operator==(const Term& other) {
+        return coef_ == other.coef_ && GetMonom() == other.GetMonom();
+    }
+
+    bool operator!=(const Term& other) {
+        return !(*this == other);
     }
 
 private:

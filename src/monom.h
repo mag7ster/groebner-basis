@@ -88,12 +88,7 @@ public:
 
 private:
     size_t CalcQuotientSize(const Monom& other) const {
-        // size_t size = 0;
-        // for (size_t i = 0; i < CountSignificantDegrees(); ++i) {
-        //     if ((*this)[i] != other[i]) {
-        //         size = i + 1;
-        //     }
-        // }
+
         size_t size = std::mismatch(degrees_->rbegin(), degrees_->rend(), other.degrees_->rbegin(),
                                     other.degrees_->rend())
                           .first.base() -
@@ -124,7 +119,7 @@ private:
         std::copy(degrees_list.begin(), trailingzeros, degrees.begin());
         return degrees;
     }
-    std::shared_ptr<std::vector<Degree>> degrees_;
+    std::shared_ptr<const std::vector<Degree>> degrees_;
 };
 
 template <typename Stream>

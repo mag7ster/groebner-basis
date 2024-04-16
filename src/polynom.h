@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <iterator>
+#include <memory>
 #include "term.h"
 
 namespace groebner_basis {
@@ -24,35 +25,38 @@ public:
         std::vector<Term<Field>> raw_data_;
     };
 
-    Polynom(Builder&& builder) : data_(OrderAndReduceVector(std::move(builder.GetMovedRawData()))) {
+    Polynom(Builder&& builder)
+        : data_(std::make_shared<const std::vector<Term<Field>>>(
+              OrderAndReduceVector(std::move(builder.GetMovedRawData())))) {
     }
 
-    Polynom(const Term<Field>& term) : data_(ReduceSimilar({term})) {
+    Polynom(const Term<Field>& term)
+        : data_(std::make_shared<const std::vector<Term<Field>>>(ReduceSimilar({term}))) {
     }
 
     const Term<Field>& GetLargestTerm() const {
-        return data_.front();
+        return data_->front();
     }
 
     auto begin() const {  // NOLINT
-        return data_.begin();
+        return data_->begin();
     }
 
     auto end() const {  // NOLINT
-        return data_.end();
+        return data_->end();
     }
 
     size_t TermsCount() const {
-        return data_.size();
+        return data_->size();
     }
 
     bool IsZero() const {
-        return data_.empty();
+        return data_->empty();
     }
 
     Polynom operator-() const {
         std::vector<Term<Field>> data;
-        data.reserve(data_.size());
+        data.reserve(data_->size());
 
         for (const auto& t : (*this)) {
             data.emplace_back(-t);
@@ -87,23 +91,34 @@ public:
         return first + (-second);
     }
 
+    bool operator==(const Polynom& other) {
+        return *data_ == *other.data_;
+    }
+
+    bool operator!=(const Polynom& other) {
+        return !(*this == other);
+    }
+
 private:
     static std::vector<Term<Field>> ReduceSimilar(std::vector<Term<Field>>&& data) {
 
-        data.erase(std::unique(data.begin(), data.end(),
-                               [](Term<Field>& first, const Term<Field>& second) {
-                                   if (first.GetMonom() == second.GetMonom()) {
-                                       first =
-                                           Term(first.GetCoefficient() + second.GetCoefficient(),
-                                                first.GetMonom());
-                                       return true;
-                                   }
-                                   return false;
-                               }),
-                   data.end());  // Я не уверен, что это не уб. на cppreference сказано только что
-                                 // если предикат не устанавливает отношения эквивалентности то
-                                 // поведение неопределено. у меня отношение эквивалентности
-                                 // сохраняется, хоть и коэффициенты меняются
+        // std::unique в итоге не успользуется, потому что он портит элементы
+
+        auto behind_unique = data.begin();
+        for (auto current = data.begin() + 1; current != data.end(); ++current) {
+            if (current->GetMonom() == behind_unique->GetMonom()) {
+                if (current != behind_unique) {
+                    *behind_unique =
+                        Term(behind_unique->GetCoefficient() + current->GetCoefficient(),
+                             behind_unique->GetMonom());
+                }
+            } else {
+                std::swap(*(++behind_unique), *current);
+            }
+        }
+        ++behind_unique;
+
+        data.erase(behind_unique, data.end());
 
         data.erase(
             std::remove_if(data.begin(), data.end(),
@@ -119,10 +134,11 @@ private:
         return ReduceSimilar(std::move(data));
     }
 
-    Polynom(std::vector<Term<Field>>&& prepared_vec) : data_(std::move(prepared_vec)) {
+    Polynom(std::vector<Term<Field>>&& prepared_vec)
+        : data_(std::make_shared<const std::vector<Term<Field>>>(std::move(prepared_vec))) {
     }
 
-    const std::vector<Term<Field>> data_;
+    std::shared_ptr<const std::vector<Term<Field>>> data_;
 };
 
 template <typename Stream, typename Field, typename Order>

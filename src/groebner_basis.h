@@ -1,4 +1,4 @@
-#include "polynom.h"
+#include "polynomialsset.h"
 #include <optional>
 
 namespace groebner_basis {
@@ -19,7 +19,7 @@ std::optional<Polynom<Field, Order>> ElementaryReduction(const Polynom<Field, Or
                                                          const Polynom<Field, Order> &g) {
 
     std::optional<Term<Field>> res = FindDivisibleTerm(f, g.GetLargestTerm());
-    if (res == std::nullopt) {
+    if (!res) {
         return std::nullopt;
     }
 
@@ -27,6 +27,30 @@ std::optional<Polynom<Field, Order>> ElementaryReduction(const Polynom<Field, Or
     Term<Field> t = divisible_term / g.GetLargestTerm();
 
     return f - t * g;
+}
+
+template <typename Field, typename Order>
+Polynom<Field, Order> ReductionByPolynomialsSet(Polynom<Field, Order> f,
+                                                const PolynomialsSet<Field, Order> &set) {
+
+    size_t success_reductions;
+
+    do {
+
+        success_reductions = 0;
+
+        for (const auto &g : set) {
+            auto temp = ElementaryReduction(f, g);
+            while (temp) {
+                ++success_reductions;
+                f = temp.value();
+                temp = ElementaryReduction(f, g);
+            }
+        }
+
+    } while (success_reductions);
+
+    return f;
 }
 
 }  // namespace groebner_basis

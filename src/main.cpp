@@ -39,4 +39,7 @@ int main() {
     std::cout << "Elem\n";
     auto res = groebner_basis::ElementaryReduction(a, a);
     std::cout << res.value() << "\n";
+
+    groebner_basis::PolynomialsSet g({a, b});
+    a = ReductionByPolynomialsSet(a, {a, b});
 }
