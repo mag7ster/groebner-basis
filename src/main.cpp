@@ -37,10 +37,10 @@ int main() {
     std::cout << a - a << "\n";
 
     std::cout << "Elem\n";
-    auto res = groebner_basis::ElementaryReduction(a, a);
+    auto res = a.ElementaryReduceBy(a);
     std::cout << res.value() << "\n";
 
     groebner_basis::PolynomialsSet g({a, b});
-    auto res1 = ReductionByPolynomialsSet(a, {a, b});
+    auto res1 = groebner_basis::PolynomialsSet({a, b}).Reduce(a);
     std::cout << res1.value() << "\n";
 }

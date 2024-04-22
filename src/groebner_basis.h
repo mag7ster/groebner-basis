@@ -1,110 +1,122 @@
-#include "polynomialsset.h"
-#include <optional>
+#include "polynomfunctions.h"
 
 namespace groebner_basis {
 
-template <typename Field, typename Order>
-static std::optional<Term<Field>> FindDivisibleTerm(const Polynom<Field, Order> &f,
-                                                    const Term<Field> &divisor) {
-    for (const auto &t : f) {
-        if (t.IsDivisibleBy(divisor)) {
-            return t;
-        }
-    }
-    return std::nullopt;
-}
+template <typename Field, typename Order = LexOrder>
+class PolynomialsSet {
+    using Container = std::vector<Polynom<Field, Order>>;
+    using Iterator = typename Container::iterator;
 
-template <typename Field, typename Order>
-std::optional<Polynom<Field, Order>> ElementaryReduction(const Polynom<Field, Order> &f,
-                                                         const Polynom<Field, Order> &g) {
-
-    std::optional<Term<Field>> res = FindDivisibleTerm(f, g.GetLargestTerm());
-    if (!res) {
-        return std::nullopt;
+public:
+    PolynomialsSet(const std::initializer_list<Polynom<Field, Order>> &poly_list)
+        : data_(poly_list) {
     }
 
-    Term<Field> divisible_term = res.value();
-    Term<Field> t = divisible_term / g.GetLargestTerm();
-
-    return f - t * g;
-}
-
-template <typename Field, typename Order>
-std::optional<Polynom<Field, Order>> ElementaryReductionWithRepeat(const Polynom<Field, Order> &f,
-                                                                   const Polynom<Field, Order> &g) {
-
-    std::optional<Polynom<Field, Order>> temp = ElementaryReduction(f, g);
-    if (!temp) {
-        return std::nullopt;
+    auto begin() {  // NOLINT
+        return data_.begin();
     }
 
-    Polynom<Field, Order> res;
-    while (temp) {
-        res = temp.value();
-        temp = ElementaryReduction(res, g);
+    auto begin() const {  // NOLINT
+        return data_.begin();
     }
 
-    return res;
-}
+    auto end() {  // NOLINT
+        return data_.end();
+    }
 
-template <typename Field, typename Order>
-static std::optional<Polynom<Field, Order>> TryReductionForOnePass(
-    const Polynom<Field, Order> &f, const PolynomialsSet<Field, Order> &set) {
+    auto end() const {  // NOLINT
+        return data_.end();
+    }
 
-    Polynom<Field, Order> res = f;
-    bool success = false;
+    void Add(const Polynom<Field, Order> &poly) {
+        data_.emplace_back(poly);
+    }
 
-    for (auto &g : set) {
-        auto temp = ElementaryReductionWithRepeat(res, g);
-        if (temp) {
-            success = true;
-            res = temp.value();
+    void AddAt(Iterator it, const Polynom<Field, Order> &poly) {
+        Add(poly);
+        std::swap(*it, data_.back());
+    }
+
+    void Erase(Iterator it) {
+        if (it != data_.end()) {
+            std::swap(*it, data_.back());
+            data_.pop_back();
         }
     }
 
-    if (!success) {
-        return std::nullopt;
+    auto Erase(const Polynom<Field, Order> &poly) {
+        auto it = std::find(data_.begin(), data_.end(), poly);
+        Erase(it);
+        return it;
     }
 
-    return res;
-}
+    std::optional<Polynom<Field, Order>> Reduce(const Polynom<Field, Order> &f) const {
 
-template <typename Field, typename Order>
-std::optional<Polynom<Field, Order>> ReductionByPolynomialsSet(
-    const Polynom<Field, Order> &f, const PolynomialsSet<Field, Order> &set) {
-
-    std::optional<Polynom<Field, Order>> temp = TryReductionForOnePass(f, set);
-    if (!temp) {
-        return std::nullopt;
-    }
-
-    Polynom<Field, Order> res;
-    while (temp) {
-        res = temp.value();
-        temp = TryReductionForOnePass(res, set);
-    }
-
-    return res;
-}
-
-// not completed
-
-template <typename Field, typename Order>
-bool TryAutoReductionForOnePass(PolynomialsSet<Field, Order> *set) {
-    for (auto it = set->begin(); it != set->end(); ++it) {
-        auto f = *it;
-        set->Erase(it);
-        auto temp = ReductionByPolynomialsSet(f, set);
+        std::optional<Polynom<Field, Order>> temp = TryReductionForOnePass(f);
         if (!temp) {
-            set->AddAt(it, f);
-        } else if (temp.value() != Term<Field>(0)) {
-            set->AddAt(it, f);
+            return std::nullopt;
+        }
+
+        Polynom<Field, Order> res{};
+        while (temp) {
+            res = temp.value();
+            temp = TryReductionForOnePass(res);
+        }
+
+        return res;
+    }
+
+    void AutoReduction() {
+        while (TryAutoReductionForOnePass()) {
+            // pass
         }
     }
-}
 
-template <typename Field, typename Order>
-void AutoReduction(PolynomialsSet<Field, Order> *set) {
-}
+private:
+    std::optional<Polynom<Field, Order>> TryReductionForOnePass(
+        const Polynom<Field, Order> &f) const {
+
+        Polynom<Field, Order> res = f;
+        bool success = false;
+
+        for (auto &g : (*this)) {
+            auto temp = res.ElementaryReduceWithRepeatBy(g);
+            if (temp) {
+                success = true;
+                res = temp.value();
+            }
+        }
+
+        if (!success) {
+            return std::nullopt;
+        }
+
+        return res;
+    }
+
+    bool TryAutoReductionForOnePass() {
+
+        auto &set = (*this);
+        bool success = false;
+
+        for (auto it = set->begin(); it != set->end(); ++it) {
+            auto f = *it;
+            set->Erase(it);
+            auto temp = ReductionByPolynomialsSet(f, set);
+            if (!temp) {
+                set->AddAt(it, f);
+            } else {
+                success = true;
+                if (temp.value() != Term<Field>(0)) {
+                    set->AddAt(it, temp.value());
+                }
+            }
+        }
+
+        return success;
+    }
+
+    Container data_;
+};
 
 }  // namespace groebner_basis

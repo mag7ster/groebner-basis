@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include "term.h"
 
 namespace groebner_basis {
@@ -24,6 +25,9 @@ public:
     private:
         std::vector<Term<Field>> raw_data_;
     };
+
+    Polynom() {
+    }
 
     Polynom(Builder&& builder)
         : data_(std::make_shared<const std::vector<Term<Field>>>(
@@ -99,6 +103,37 @@ public:
         return !(*this == other);
     }
 
+    std::optional<Polynom<Field, Order>> ElementaryReduceBy(const Polynom<Field, Order>& g) const {
+
+        std::optional<Term<Field>> res = FindDivisibleTerm(g.GetLargestTerm());
+        if (!res) {
+            return std::nullopt;
+        }
+
+        Term<Field> divisible_term = res.value();
+        Term<Field> t = divisible_term / g.GetLargestTerm();
+
+        return *this - t * g;
+    }
+
+    std::optional<Polynom<Field, Order>> ElementaryReduceWithRepeatBy(
+        const Polynom<Field, Order>& g) const {
+
+        std::optional<Polynom<Field, Order>> temp = this->ElementaryReduceBy(g);
+        if (!temp) {
+            return std::nullopt;
+        }
+
+        Polynom<Field, Order> res;
+        while (temp) {
+            res = temp.value();
+            // temp = ElementaryReduction(res, g);
+            temp = res.ElementaryReduceBy(g);
+        }
+
+        return res;
+    }
+
 private:
     static std::vector<Term<Field>> ReduceSimilar(std::vector<Term<Field>>&& data) {
 
@@ -136,6 +171,15 @@ private:
 
     Polynom(std::vector<Term<Field>>&& prepared_vec)
         : data_(std::make_shared<const std::vector<Term<Field>>>(std::move(prepared_vec))) {
+    }
+
+    std::optional<Term<Field>> FindDivisibleTerm(const Term<Field>& divisor) const {
+        for (const auto& t : (*this)) {
+            if (t.IsDivisibleBy(divisor)) {
+                return t;
+            }
+        }
+        return std::nullopt;
     }
 
     std::shared_ptr<const std::vector<Term<Field>>> data_;
