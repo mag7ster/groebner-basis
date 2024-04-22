@@ -14,6 +14,7 @@ public:
     public:
         Builder&& AddTerm(const Field& coef,
                           const std::initializer_list<Monom::Degree>& degrees_list) {
+
             raw_data_.emplace_back(coef, degrees_list);
             return std::move(*this);
         }
@@ -26,7 +27,7 @@ public:
         std::vector<Term<Field>> raw_data_;
     };
 
-    Polynom() {
+    Polynom() {  // почему без этого не компилируется???
     }
 
     Polynom(Builder&& builder)
@@ -127,7 +128,6 @@ public:
         Polynom<Field, Order> res;
         while (temp) {
             res = temp.value();
-            // temp = ElementaryReduction(res, g);
             temp = res.ElementaryReduceBy(g);
         }
 

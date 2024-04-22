@@ -86,6 +86,8 @@ public:
         return Monom(std::move(newdegrees));
     }
 
+    friend Monom LCM(const Monom& m1, const Monom& m2);
+
 private:
     size_t CalcQuotientSize(const Monom& other) const {
 
@@ -121,6 +123,18 @@ private:
     }
     std::shared_ptr<const std::vector<Degree>> degrees_;
 };
+
+Monom LCM(const Monom& m1, const Monom& m2) {
+
+    size_t size = std::max(m1.CountSignificantDegrees(), m2.CountSignificantDegrees());
+    std::vector<Monom::Degree> lcm(size);
+
+    for (size_t i = 0; i < size; ++i) {
+        lcm[i] = std::max(m1[i], m2[i]);
+    }
+
+    return Monom(std::move(lcm));
+}
 
 template <typename Stream>
 Stream& operator<<(Stream& stream, const Monom& monom) {

@@ -43,4 +43,11 @@ int main() {
     groebner_basis::PolynomialsSet g({a, b});
     auto res1 = groebner_basis::PolynomialsSet({a, b}).Reduce(a);
     std::cout << res1.value() << "\n";
+
+    std::cout << t1.GetMonom() << " | " << t2.GetMonom() << "\n";
+    auto lol = groebner_basis::LCM(t1.GetMonom(), t2.GetMonom());
+    std::cout << lol << "\n" << lol / t1.GetMonom() << "\n" << lol / t2.GetMonom() << "\n";
+
+    std::cout << a << " | " << b << "\n";
+    std::cout << groebner_basis::SPolynom(a, b) << "\n";
 }
