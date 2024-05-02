@@ -19,11 +19,13 @@ public:
             return std::move(*this);
         }
 
+        friend class Polynom;
+
+    private:
         std::vector<Term<Field>>&& GetMovedRawData() {
             return std::move(raw_data_);
         }
 
-    private:
         std::vector<Term<Field>> raw_data_;
     };
 

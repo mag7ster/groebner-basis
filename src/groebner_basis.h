@@ -1,4 +1,4 @@
-#include "polynomfunctions.h"
+#include "functions.h"
 
 namespace groebner_basis {
 

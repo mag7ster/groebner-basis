@@ -2,6 +2,18 @@
 
 namespace groebner_basis {
 
+Monom LCM(const Monom& m1, const Monom& m2) {
+
+    size_t size = std::max(m1.CountSignificantDegrees(), m2.CountSignificantDegrees());
+    std::vector<Monom::Degree> lcm(size);
+
+    for (size_t i = 0; i < size; ++i) {
+        lcm[i] = std::max(m1[i], m2[i]);
+    }
+
+    return Monom(std::move(lcm));
+}
+
 template <typename Field, typename Order>
 Polynom<Field, Order> SPolynom(const Polynom<Field, Order>& f1, const Polynom<Field, Order>& f2) {
 
