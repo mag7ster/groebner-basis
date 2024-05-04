@@ -9,7 +9,8 @@ public:
         : Monom(degrees_list), coef_(coefficient) {
     }
 
-    Term(const Field& coefficient, const Monom& monom) : Monom(monom), coef_(coefficient) {
+    Term(const Field& coefficient, const Monom& monom = Monom())
+        : Monom(monom), coef_(coefficient) {
     }
 
     const Field& GetCoefficient() const {

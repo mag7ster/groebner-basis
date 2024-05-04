@@ -13,8 +13,10 @@ class Monom {
 public:
     using Degree = unsigned int;
 
+    Monom() : degrees_(std::make_shared<const std::vector<Degree>>()){};
+
     explicit Monom(const std::initializer_list<Degree>& degrees_list)
-        : degrees_(std::make_shared<std::vector<Degree>>(TrimTrailingZeros(degrees_list))) {
+        : degrees_(std::make_shared<const std::vector<Degree>>(TrimTrailingZeros(degrees_list))) {
     }
 
     auto begin() const {  // NOLINT

@@ -29,7 +29,7 @@ public:
         std::vector<Term<Field>> raw_data_;
     };
 
-    Polynom() {  // почему без этого не компилируется???
+    Polynom() : data_(std::make_shared<const std::vector<Term<Field>>>()) {
     }
 
     Polynom(Builder&& builder)

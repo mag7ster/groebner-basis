@@ -1,3 +1,5 @@
+#include <cstddef>
+#include <vector>
 #include "functions.h"
 
 namespace groebner_basis {
@@ -26,6 +28,10 @@ public:
 
     auto end() const {  // NOLINT
         return data_.end();
+    }
+
+    size_t Size() const {
+        return data_.size();
     }
 
     void Add(const Polynom<Field, Order> &poly) {
@@ -66,10 +72,25 @@ public:
         return res;
     }
 
-    void AutoReduction() {
+    unsigned int AutoReduction() {
+        unsigned int count_passes = 0;
         while (TryAutoReductionForOnePass()) {
-            // pass
+            count_passes += 1;
         }
+        return count_passes;
+    }
+
+    unsigned int BuildGreobnerBasis() {
+        unsigned int count_passes = 0;
+        while (TryBuildGreobnerBasisForOnePass()) {
+            count_passes += 1;
+        }
+
+        for (auto &f : (*this)) {
+            f = f * Term<Field>(f.GetLargestTerm().GetCoefficient());
+        }
+
+        return count_passes;
     }
 
 private:
@@ -114,6 +135,29 @@ private:
         }
 
         return success;
+    }
+
+    bool TryBuildGreobnerBasisForOnePass() {
+        std::vector<Polynom<Field, Order>> r;
+        r.reserve(Size() * (Size() - 1) / 2);
+        for (auto it1 = begin(); it1 != end(); ++it1) {
+            for (auto it2 = it1 + 1; it2 != end(); ++it2) {
+                auto s = SPolynom(*it1, *it2);
+                auto r_ij = Reduce(s);
+
+                if (!r_ij && r_ij.value().IsZero()) {
+                    r.emplace_back(r_ij.value());
+                }
+            }
+        }
+
+        for (const auto &f : r) {
+            Add(f);
+        }
+
+        AutoReduction();
+
+        return !r.empty();
     }
 
     Container data_;
