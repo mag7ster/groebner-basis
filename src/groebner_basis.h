@@ -117,19 +117,18 @@ private:
 
     bool TryAutoReductionForOnePass() {
 
-        auto &set = (*this);
         bool success = false;
 
-        for (auto it = set->begin(); it != set->end(); ++it) {
+        for (auto it = this->begin(); it != this->end(); ++it) {
             auto f = *it;
-            set->Erase(it);
-            auto temp = ReductionByPolynomialsSet(f, set);
+            this->Erase(it);
+            auto temp = this->Reduce(f);
             if (!temp) {
-                set->AddAt(it, f);
+                this->AddAt(it, f);
             } else {
                 success = true;
-                if (temp.value() != Term<Field>(0)) {
-                    set->AddAt(it, temp.value());
+                if (!temp.value().IsZero()) {
+                    this->AddAt(it, temp.value());
                 }
             }
         }

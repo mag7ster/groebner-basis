@@ -50,4 +50,10 @@ int main() {
 
     std::cout << a << " | " << b << "\n";
     std::cout << groebner_basis::SPolynom(a, b) << "\n";
+
+    g.BuildGreobnerBasis();
+    std::cout << "Greobner\n";
+    for (const auto& f : g) {
+        std::cout << f << "\n";
+    }
 }
