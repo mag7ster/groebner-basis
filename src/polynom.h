@@ -98,12 +98,26 @@ public:
         return first + (-second);
     }
 
-    bool operator==(const Polynom& other) {
-        return *data_ == *other.data_;
+    friend bool operator==(const Polynom& first, const Polynom& second) {
+        return *first == *second.data_;
     }
 
-    bool operator!=(const Polynom& other) {
-        return !(*this == other);
+    friend bool operator!=(const Polynom& first, const Polynom& second) {
+        return !(first == second);
+    }
+
+    friend bool operator<(const Polynom& first, const Polynom& second) {
+        for (auto it1 = first.begin(), it2 = second.begin();
+             it1 != first.end() && it2 != second.end(); ++it1, ++it2) {
+            if (*it1 == *it2) {
+                continue;
+            } else if (it1->GetMonom() == it2->GetMonom()) {
+                return it1->GetCoefficient() < it2->GetCoefficient();
+            } else {
+                return !Order()(*it1, *it2);
+            }
+        }
+        return first.TermsCount() < second.TermsCount();
     }
 
     std::optional<Polynom<Field, Order>> ElementaryReduceBy(const Polynom<Field, Order>& g) const {

@@ -90,6 +90,8 @@ public:
             f = f * Term<Field>(f.GetLargestTerm().GetCoefficient());
         }
 
+        std::sort(begin(), end());
+
         return count_passes;
     }
 
@@ -144,7 +146,7 @@ private:
                 auto s = SPolynom(*it1, *it2);
                 auto r_ij = Reduce(s);
 
-                if (!r_ij && r_ij.value().IsZero()) {
+                if (r_ij && !r_ij.value().IsZero()) {
                     r.emplace_back(r_ij.value());
                 }
             }

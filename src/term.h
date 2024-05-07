@@ -33,12 +33,12 @@ public:
         return Term(-coef_, this->GetMonom());
     }
 
-    bool operator==(const Term& other) {
-        return coef_ == other.coef_ && GetMonom() == other.GetMonom();
+    friend bool operator==(const Term& first, const Term& second) {
+        return first.coef_ == second.coef_ && first.GetMonom() == second.GetMonom();
     }
 
-    bool operator!=(const Term& other) {
-        return !(*this == other);
+    friend bool operator!=(const Term& first, const Term& second) {
+        return !(first == second);
     }
 
 private:

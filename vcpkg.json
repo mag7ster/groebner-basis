@@ -1,5 +1,7 @@
 {
   "dependencies": [
-    "boost-rational"
+    "boost-rational",
+    "gtest",
+    "benchmark"
   ]
 }

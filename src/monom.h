@@ -129,9 +129,16 @@ private:
 
 template <typename Stream>
 Stream& operator<<(Stream& stream, const Monom& monom) {
+
     for (auto it = monom.begin(); it != monom.end(); ++it) {
-        stream << "x" << it - monom.begin() << "^{" << *it << "}";
+        if (*it) {
+            stream << "x" << it - monom.begin();
+            if (*it - 1) {
+                stream << "^{" << *it << "}";
+            }
+        }
     }
+
     return stream;
 }
 
