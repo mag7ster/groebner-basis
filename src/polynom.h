@@ -1,13 +1,12 @@
 #include <algorithm>
 #include <cstddef>
-#include <iterator>
 #include <memory>
 #include <optional>
 #include "term.h"
 
 namespace groebner_basis {
 
-template <typename Field, typename Order = LexOrder>
+template <typename Field, typename Order = GrevLexOrder>
 class Polynom {
 public:
     class Builder {
@@ -29,16 +28,14 @@ public:
         std::vector<Term<Field>> raw_data_;
     };
 
-    Polynom() : data_(std::make_shared<const std::vector<Term<Field>>>()) {
+    Polynom() : Polynom(std::vector<Term<Field>>()) {
     }
 
     Polynom(Builder&& builder)
-        : data_(std::make_shared<const std::vector<Term<Field>>>(
-              OrderAndReduceVector(std::move(builder.GetMovedRawData())))) {
+        : Polynom(OrderAndReduceVector(std::move(builder.GetMovedRawData()))) {
     }
 
-    Polynom(const Term<Field>& term)
-        : data_(std::make_shared<const std::vector<Term<Field>>>(ReduceSimilar({term}))) {
+    Polynom(const Term<Field>& term) : Polynom(ReduceSimilar({term})) {
     }
 
     const Term<Field>& GetLargestTerm() const {
@@ -107,17 +104,20 @@ public:
     }
 
     friend bool operator<(const Polynom& first, const Polynom& second) {
+
         for (auto it1 = first.begin(), it2 = second.begin();
              it1 != first.end() && it2 != second.end(); ++it1, ++it2) {
+
             if (*it1 == *it2) {
                 continue;
             } else if (it1->GetMonom() == it2->GetMonom()) {
-                return it1->GetCoefficient() < it2->GetCoefficient();
+                return it1->GetCoefficient() > it2->GetCoefficient();
             } else {
-                return !Order()(*it1, *it2);
+                return Order()(*it1, *it2);
             }
         }
-        return first.TermsCount() < second.TermsCount();
+
+        return first.TermsCount() > second.TermsCount();
     }
 
     std::optional<Polynom<Field, Order>> ElementaryReduceBy(const Polynom<Field, Order>& g) const {
@@ -208,7 +208,11 @@ Stream& operator<<(Stream& stream, const Polynom<Field, Order>& poly) {
     } else {
         stream << poly.GetLargestTerm();
         for (auto it = poly.begin() + 1; it != poly.end(); ++it) {
-            stream << " + " << *it;
+            if (it->GetCoefficient() < 0) {
+                stream << " - " << Term(-it->GetCoefficient(), it->GetMonom());
+            } else {
+                stream << " + " << *it;
+            }
         }
     }
     return stream;

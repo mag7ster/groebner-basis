@@ -47,9 +47,18 @@ private:
 
 template <typename Stream, typename Field>
 Stream& operator<<(Stream& stream, const Term<Field>& term) {
-    stream << term.GetCoefficient();
-    if (term.CountSignificantDegrees() != 0) {
-        stream << "*" << term.GetMonom();
+
+    if (term.GetCoefficient() == 1) {
+        if (term.CountSignificantDegrees() != 0) {
+            stream << term.GetMonom();
+        } else {
+            stream << term.GetCoefficient();
+        }
+    } else {
+        stream << term.GetCoefficient();
+        if (term.CountSignificantDegrees() != 0) {
+            stream << "*" << term.GetMonom();
+        }
     }
     return stream;
 }

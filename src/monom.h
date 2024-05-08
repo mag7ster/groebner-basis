@@ -6,17 +6,23 @@
 #include <memory>
 #include <vector>
 #include <initializer_list>
+#include <type_traits>
 
 namespace groebner_basis {
+
+template <typename Iterator, typename T>
+concept IsIteratorValueEqualsT =
+    std::is_same_v<T, typename std::iterator_traits<Iterator>::value_type>;
 
 class Monom {
 public:
     using Degree = unsigned int;
 
-    Monom() : degrees_(std::make_shared<const std::vector<Degree>>()){};
+    Monom() : Monom(std::vector<Degree>()) {
+    }
 
     explicit Monom(const std::initializer_list<Degree>& degrees_list)
-        : degrees_(std::make_shared<const std::vector<Degree>>(TrimTrailingZeros(degrees_list))) {
+        : Monom(TrimTrailingZeros(degrees_list.begin(), degrees_list.end())) {
     }
 
     auto begin() const {  // NOLINT
@@ -90,6 +96,10 @@ public:
 
     friend Monom LCM(const Monom& m1, const Monom& m2);
 
+    friend Monom BuildMonomFromVectorDegrees(const std::vector<Degree> vector_degrees) {
+        return Monom(TrimTrailingZeros(vector_degrees.begin(), vector_degrees.end()));
+    }
+
 private:
     size_t CalcQuotientSize(const Monom& other) const {
 
@@ -104,23 +114,24 @@ private:
         : degrees_(std::make_shared<std::vector<Degree>>(std::move(vec))) {
     }
 
-    static std::vector<Degree> TrimTrailingZeros(
-        const std::initializer_list<Degree>& degrees_list) {
+    template <typename Iterator>
+        requires IsIteratorValueEqualsT<Iterator, Degree>
+    static std::vector<Degree> TrimTrailingZeros(Iterator begin, Iterator end) {
 
         std::vector<Degree> zero = {0};
 
-        auto trailingzeros = std::find_end(degrees_list.begin(), degrees_list.end(), zero.begin(),
-                                           zero.end(), std::not_equal_to<Degree>());
+        auto trailingzeros =
+            std::find_end(begin, end, zero.begin(), zero.end(), std::not_equal_to<Degree>());
 
-        if (trailingzeros == degrees_list.end()) {
-            trailingzeros = degrees_list.begin();
+        if (trailingzeros == end) {
+            trailingzeros = begin;
         } else {
             ++trailingzeros;
         }
 
-        std::vector<Degree> degrees(std::distance(degrees_list.begin(), trailingzeros));
+        std::vector<Degree> degrees(std::distance(begin, trailingzeros));
 
-        std::copy(degrees_list.begin(), trailingzeros, degrees.begin());
+        std::copy(begin, trailingzeros, degrees.begin());
         return degrees;
     }
 

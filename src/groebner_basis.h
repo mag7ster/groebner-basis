@@ -4,7 +4,7 @@
 
 namespace groebner_basis {
 
-template <typename Field, typename Order = LexOrder>
+template <typename Field, typename Order = GrevLexOrder>
 class PolynomialsSet {
     using Container = std::vector<Polynom<Field, Order>>;
     using Iterator = typename Container::iterator;
@@ -12,6 +12,9 @@ class PolynomialsSet {
 public:
     PolynomialsSet(const std::initializer_list<Polynom<Field, Order>> &poly_list)
         : data_(poly_list) {
+    }
+
+    PolynomialsSet() {
     }
 
     auto begin() {  // NOLINT
@@ -38,11 +41,6 @@ public:
         data_.emplace_back(poly);
     }
 
-    void AddAt(Iterator it, const Polynom<Field, Order> &poly) {
-        Add(poly);
-        std::swap(*it, data_.back());
-    }
-
     void Erase(Iterator it) {
         if (it != data_.end()) {
             std::swap(*it, data_.back());
@@ -50,10 +48,9 @@ public:
         }
     }
 
-    auto Erase(const Polynom<Field, Order> &poly) {
+    void Erase(const Polynom<Field, Order> &poly) {
         auto it = std::find(data_.begin(), data_.end(), poly);
         Erase(it);
-        return it;
     }
 
     std::optional<Polynom<Field, Order>> Reduce(const Polynom<Field, Order> &f) const {
@@ -96,6 +93,11 @@ public:
     }
 
 private:
+    void AddAt(Iterator it, const Polynom<Field, Order> &poly) {
+        Add(poly);
+        std::swap(*it, data_.back());
+    }
+
     std::optional<Polynom<Field, Order>> TryReductionForOnePass(
         const Polynom<Field, Order> &f) const {
 
