@@ -41,26 +41,26 @@ public:
         return !(first == second);
     }
 
+    template <typename Stream>
+    friend Stream& operator<<(Stream& stream, const Term& term) {
+
+        if (term.GetCoefficient() == Field(1)) {
+            if (term.CountSignificantDegrees() != 0) {
+                stream << term.GetMonom();
+            } else {
+                stream << term.GetCoefficient();
+            }
+        } else {
+            stream << term.GetCoefficient();
+            if (term.CountSignificantDegrees() != 0) {
+                stream << "*" << term.GetMonom();
+            }
+        }
+        return stream;
+    }
+
 private:
     Field coef_;
 };
-
-template <typename Stream, typename Field>
-Stream& operator<<(Stream& stream, const Term<Field>& term) {
-
-    if (term.GetCoefficient() == 1) {
-        if (term.CountSignificantDegrees() != 0) {
-            stream << term.GetMonom();
-        } else {
-            stream << term.GetCoefficient();
-        }
-    } else {
-        stream << term.GetCoefficient();
-        if (term.CountSignificantDegrees() != 0) {
-            stream << "*" << term.GetMonom();
-        }
-    }
-    return stream;
-}
 
 }  // namespace groebner_basis

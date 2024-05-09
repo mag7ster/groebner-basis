@@ -1,7 +1,9 @@
 {
   "dependencies": [
+    "benchmark",
     "boost-rational",
+    "boost-safe-numerics",
     "gtest",
-    "benchmark"
+    "boost-exception"
   ]
 }

@@ -96,9 +96,7 @@ public:
 
     friend Monom LCM(const Monom& m1, const Monom& m2);
 
-    friend Monom BuildMonomFromVectorDegrees(const std::vector<Degree> vector_degrees) {
-        return Monom(TrimTrailingZeros(vector_degrees.begin(), vector_degrees.end()));
-    }
+    friend Monom BuildMonomFromVectorDegrees(const std::vector<Degree>& vector_degrees);
 
 private:
     size_t CalcQuotientSize(const Monom& other) const {
@@ -137,6 +135,10 @@ private:
 
     std::shared_ptr<const std::vector<Degree>> degrees_;
 };
+
+Monom BuildMonomFromVectorDegrees(const std::vector<Monom::Degree>& vector_degrees) {
+    return Monom(Monom::TrimTrailingZeros(vector_degrees.begin(), vector_degrees.end()));
+}
 
 template <typename Stream>
 Stream& operator<<(Stream& stream, const Monom& monom) {

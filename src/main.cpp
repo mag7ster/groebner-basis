@@ -1,45 +1,65 @@
 #include "groebner_basis.h"
 #include <boost/rational.hpp>
+#include <boost/safe_numerics/safe_integer.hpp>
+#include <boost/safe_numerics/safe_integer_range.hpp>
+#include <boost/exception/exception.hpp>
+#include <boost/exception/diagnostic_information.hpp>
+#include <cstddef>
 #include <iostream>
 
-using Fraction = boost::rational<int64_t>;
+using namespace boost::safe_numerics;
+
+// using MyInt = boost::safe_numerics::safe_signed_range<-100, 100>;
+using MyInt = safe<std::int32_t>;
+using Fraction = boost::rational<MyInt>;
 
 namespace gb = groebner_basis;
 
-void PrintCyclic2() {
-    gb::Polynom<Fraction> f1 =
-        groebner_basis::Polynom<Fraction>::Builder().AddTerm(1, {1, 0}).AddTerm(1, {0, 1});
-    gb::Polynom<Fraction> f2 =
-        groebner_basis::Polynom<Fraction>::Builder().AddTerm(1, {1, 1}).AddTerm(-1, {0, 0});
+void PrintCyclic(size_t n) {
 
-    gb::PolynomialsSet s({f1, f2});
+    gb::PolynomialsSet<Fraction, gb::GrevLexOrder> s;
 
-    s.BuildGreobnerBasis();
+    for (size_t i = 1; i < n; ++i) {
+        // gb::Polynom<Fraction>::Builder builder;
 
-    for (auto &f : s) {
-        std::cout << f << "\n";
+        std::vector<gb::Monom::Degree> degrees(n, 0);
+        std::fill(degrees.begin(), degrees.begin() + i, 1);
+
+        gb::Polynom<Fraction, gb::GrevLexOrder> poly;
+
+        for (size_t j = 0; j < n; ++j) {
+
+            poly = poly + gb::Term<Fraction>(Fraction(1), gb::BuildMonomFromVectorDegrees(degrees));
+            degrees[j] = 0;
+            degrees[(j + i) % n] = 1;
+        }
+
+        s.Add(poly);
     }
-}
 
-void PrintCyclic3() {
-    gb::Polynom<Fraction> f1 = groebner_basis::Polynom<Fraction>::Builder()
-                                   .AddTerm(1, {1, 0, 0})
-                                   .AddTerm(1, {0, 1, 0})
-                                   .AddTerm(1, {0, 0, 1});
-    gb::Polynom<Fraction> f2 = groebner_basis::Polynom<Fraction>::Builder()
-                                   .AddTerm(1, {1, 1, 0})
-                                   .AddTerm(1, {1, 0, 1})
-                                   .AddTerm(1, {0, 1, 1});
+    std::vector<gb::Monom::Degree> degrees(n, 1);
+    gb::Polynom<Fraction, gb::GrevLexOrder> poly =
+        gb::Term<Fraction>(Fraction(1), gb::BuildMonomFromVectorDegrees(degrees));
+    poly = poly + gb::Term<Fraction>(Fraction(-1), {});
 
-    gb::Polynom<Fraction> f3 =
-        groebner_basis::Polynom<Fraction>::Builder().AddTerm(1, {1, 1, 1}).AddTerm(-1, {0, 0, 0});
+    s.Add(poly);
 
-    gb::PolynomialsSet s({f1, f2, f3});
+    std::cout << "Cyclic " << n << " \n";
+    for (auto &p : s) {
+        std::cout << p << "\n";
+    }
+    std::cout << "\n";
 
-    s.BuildGreobnerBasis();
+    try {
 
-    for (auto &f : s) {
-        std::cout << f << "\n";
+        s.BuildGreobnerBasis();
+        for (auto &p : s) {
+            std::cout << p << "\n";
+        }
+        std::cout << "\n";
+
+    } catch (...) {
+        std::cerr << boost::current_exception_diagnostic_information();
     }
 }
 
@@ -97,11 +117,12 @@ int main() {
     //     std::cout << f << "\n";
     // }
 
-    PrintCyclic2();
+    PrintCyclic(4);
+    PrintCyclic(5);
 
-    std::cout << "\n";
-
-    PrintCyclic3();
+    // for (int i = 2; i < 7; ++i) {
+    //     PrintCyclic(i);
+    // }
 
     return 0;
 }

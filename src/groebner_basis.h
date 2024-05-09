@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <iostream>
 #include <vector>
 #include "functions.h"
 
@@ -6,12 +7,14 @@ namespace groebner_basis {
 
 template <typename Field, typename Order = GrevLexOrder>
 class PolynomialsSet {
-    using Container = std::vector<Polynom<Field, Order>>;
+
+    using Polynom = Polynom<Field, Order>;
+
+    using Container = std::vector<Polynom>;
     using Iterator = typename Container::iterator;
 
 public:
-    PolynomialsSet(const std::initializer_list<Polynom<Field, Order>> &poly_list)
-        : data_(poly_list) {
+    PolynomialsSet(const std::initializer_list<Polynom> &poly_list) : data_(poly_list) {
     }
 
     PolynomialsSet() {
@@ -37,7 +40,7 @@ public:
         return data_.size();
     }
 
-    void Add(const Polynom<Field, Order> &poly) {
+    void Add(const Polynom &poly) {
         data_.emplace_back(poly);
     }
 
@@ -48,19 +51,19 @@ public:
         }
     }
 
-    void Erase(const Polynom<Field, Order> &poly) {
+    void Erase(const Polynom &poly) {
         auto it = std::find(data_.begin(), data_.end(), poly);
         Erase(it);
     }
 
-    std::optional<Polynom<Field, Order>> Reduce(const Polynom<Field, Order> &f) const {
+    std::optional<Polynom> Reduce(const Polynom &f) const {
 
-        std::optional<Polynom<Field, Order>> temp = TryReductionForOnePass(f);
+        std::optional<Polynom> temp = TryReductionForOnePass(f);
         if (!temp) {
             return std::nullopt;
         }
 
-        Polynom<Field, Order> res{};
+        Polynom res;
         while (temp) {
             res = temp.value();
             temp = TryReductionForOnePass(res);
@@ -81,10 +84,11 @@ public:
         unsigned int count_passes = 0;
         while (TryBuildGreobnerBasisForOnePass()) {
             count_passes += 1;
+            std::cout << "a\n";
         }
 
         for (auto &f : (*this)) {
-            f = f * Term<Field>(f.GetLargestTerm().GetCoefficient());
+            f = f * Term<Field>(Field(1) / f.GetLargestTerm().GetCoefficient());
         }
 
         std::sort(begin(), end());
@@ -93,23 +97,25 @@ public:
     }
 
 private:
-    void AddAt(Iterator it, const Polynom<Field, Order> &poly) {
+    void AddAt(Iterator it, const Polynom &poly) {
         Add(poly);
         std::swap(*it, data_.back());
     }
 
-    std::optional<Polynom<Field, Order>> TryReductionForOnePass(
-        const Polynom<Field, Order> &f) const {
+    std::optional<Polynom> TryReductionForOnePass(const Polynom &f) const {
 
-        Polynom<Field, Order> res = f;
+        Polynom res = f;
         bool success = false;
 
+        int i = 0;
         for (auto &g : (*this)) {
+
             auto temp = res.ElementaryReduceWithRepeatBy(g);
             if (temp) {
                 success = true;
                 res = temp.value();
             }
+            ++i;
         }
 
         if (!success) {
@@ -123,7 +129,9 @@ private:
 
         bool success = false;
 
-        for (auto it = this->begin(); it != this->end(); ++it) {
+        auto it = this->begin();
+        for (size_t i = 0; i < Size(); ++i, ++it) {
+
             auto f = *it;
             this->Erase(it);
             auto temp = this->Reduce(f);
@@ -141,7 +149,7 @@ private:
     }
 
     bool TryBuildGreobnerBasisForOnePass() {
-        std::vector<Polynom<Field, Order>> r;
+        std::vector<Polynom> r;
         r.reserve(Size() * (Size() - 1) / 2);
         for (auto it1 = begin(); it1 != end(); ++it1) {
             for (auto it2 = it1 + 1; it2 != end(); ++it2) {

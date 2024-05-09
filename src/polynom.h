@@ -9,6 +9,8 @@ namespace groebner_basis {
 template <typename Field, typename Order = GrevLexOrder>
 class Polynom {
 public:
+    using Term = Term<Field>;
+
     class Builder {
     public:
         Builder&& AddTerm(const Field& coef,
@@ -18,27 +20,33 @@ public:
             return std::move(*this);
         }
 
+        Builder&& AddTerm(const Field& coef, const Monom& monom) {
+
+            raw_data_.emplace_back(coef, monom);
+            return std::move(*this);
+        }
+
         friend class Polynom;
 
     private:
-        std::vector<Term<Field>>&& GetMovedRawData() {
+        std::vector<Term>&& GetMovedRawData() {
             return std::move(raw_data_);
         }
 
-        std::vector<Term<Field>> raw_data_;
+        std::vector<Term> raw_data_;
     };
 
-    Polynom() : Polynom(std::vector<Term<Field>>()) {
+    Polynom() : Polynom(std::vector<Term>()) {
     }
 
     Polynom(Builder&& builder)
         : Polynom(OrderAndReduceVector(std::move(builder.GetMovedRawData()))) {
     }
 
-    Polynom(const Term<Field>& term) : Polynom(ReduceSimilar({term})) {
+    Polynom(const Term& term) : Polynom(ReduceSimilar({term})) {
     }
 
-    const Term<Field>& GetLargestTerm() const {
+    const Term& GetLargestTerm() const {
         return data_->front();
     }
 
@@ -59,7 +67,7 @@ public:
     }
 
     Polynom operator-() const {
-        std::vector<Term<Field>> data;
+        std::vector<Term> data;
         data.reserve(data_->size());
 
         for (const auto& t : (*this)) {
@@ -70,7 +78,7 @@ public:
     }
 
     friend Polynom operator*(const Polynom& first, const Polynom& second) {
-        std::vector<Term<Field>> result;
+        std::vector<Term> result;
         result.reserve(first.TermsCount() * second.TermsCount());
 
         for (const auto& t1 : first) {
@@ -83,7 +91,7 @@ public:
     }
 
     friend Polynom operator+(const Polynom& first, const Polynom& second) {
-        std::vector<Term<Field>> result;
+        std::vector<Term> result;
         result.reserve(first.TermsCount() + second.TermsCount());
 
         std::merge(first.begin(), first.end(), second.begin(), second.end(),
@@ -120,28 +128,46 @@ public:
         return first.TermsCount() > second.TermsCount();
     }
 
-    std::optional<Polynom<Field, Order>> ElementaryReduceBy(const Polynom<Field, Order>& g) const {
+    template <typename Stream>
+    friend Stream& operator<<(Stream& stream, const Polynom& poly) {
+        if (poly.IsZero()) {
+            stream << "0";
+        } else {
+            stream << poly.GetLargestTerm();
+            for (auto it = poly.begin() + 1; it != poly.end(); ++it) {
+                if (it->GetCoefficient() < 0) {
+                    stream << " - " << Term(-it->GetCoefficient(), it->GetMonom());
+                } else {
+                    stream << " + " << *it;
+                }
+            }
+        }
+        return stream;
+    }
 
-        std::optional<Term<Field>> res = FindDivisibleTerm(g.GetLargestTerm());
+    std::optional<Polynom> ElementaryReduceBy(const Polynom& g) const {
+
+        std::optional<Term> res = FindDivisibleTerm(g.GetLargestTerm());
         if (!res) {
             return std::nullopt;
         }
 
-        Term<Field> divisible_term = res.value();
-        Term<Field> t = divisible_term / g.GetLargestTerm();
+        Term divisible_term = res.value();
+        Term t = divisible_term / g.GetLargestTerm();
 
-        return *this - t * g;
+        Polynom result = *this - t * g;
+
+        return result;
     }
 
-    std::optional<Polynom<Field, Order>> ElementaryReduceWithRepeatBy(
-        const Polynom<Field, Order>& g) const {
+    std::optional<Polynom> ElementaryReduceWithRepeatBy(const Polynom& g) const {
 
-        std::optional<Polynom<Field, Order>> temp = this->ElementaryReduceBy(g);
+        std::optional<Polynom> temp = this->ElementaryReduceBy(g);
         if (!temp) {
             return std::nullopt;
         }
 
-        Polynom<Field, Order> res;
+        Polynom res;
         while (temp) {
             res = temp.value();
             temp = res.ElementaryReduceBy(g);
@@ -151,7 +177,11 @@ public:
     }
 
 private:
-    static std::vector<Term<Field>> ReduceSimilar(std::vector<Term<Field>>&& data) {
+    static std::vector<Term> ReduceSimilar(std::vector<Term>&& data) {
+
+        if (data.empty()) {
+            return std::move(data);
+        }
 
         // std::unique в итоге не успользуется, потому что он портит элементы
 
@@ -173,23 +203,23 @@ private:
 
         data.erase(
             std::remove_if(data.begin(), data.end(),
-                           [](const Term<Field>& term) { return term.GetCoefficient() == 0; }),
+                           [](const Term& term) { return term.GetCoefficient() == Field(0); }),
             data.end());
 
         return std::move(data);
     }
 
-    static std::vector<Term<Field>> OrderAndReduceVector(std::vector<Term<Field>>&& data) {
+    static std::vector<Term> OrderAndReduceVector(std::vector<Term>&& data) {
 
         std::sort(data.begin(), data.end(), Order());
         return ReduceSimilar(std::move(data));
     }
 
-    Polynom(std::vector<Term<Field>>&& prepared_vec)
-        : data_(std::make_shared<const std::vector<Term<Field>>>(std::move(prepared_vec))) {
+    Polynom(std::vector<Term>&& prepared_vec)
+        : data_(std::make_shared<const std::vector<Term>>(std::move(prepared_vec))) {
     }
 
-    std::optional<Term<Field>> FindDivisibleTerm(const Term<Field>& divisor) const {
+    std::optional<Term> FindDivisibleTerm(const Term& divisor) const {
         for (const auto& t : (*this)) {
             if (t.IsDivisibleBy(divisor)) {
                 return t;
@@ -198,24 +228,7 @@ private:
         return std::nullopt;
     }
 
-    std::shared_ptr<const std::vector<Term<Field>>> data_;
+    std::shared_ptr<const std::vector<Term>> data_;
 };
-
-template <typename Stream, typename Field, typename Order>
-Stream& operator<<(Stream& stream, const Polynom<Field, Order>& poly) {
-    if (poly.IsZero()) {
-        stream << "0";
-    } else {
-        stream << poly.GetLargestTerm();
-        for (auto it = poly.begin() + 1; it != poly.end(); ++it) {
-            if (it->GetCoefficient() < 0) {
-                stream << " - " << Term(-it->GetCoefficient(), it->GetMonom());
-            } else {
-                stream << " + " << *it;
-            }
-        }
-    }
-    return stream;
-}
 
 }  // namespace groebner_basis

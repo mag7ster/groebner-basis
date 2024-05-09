@@ -1,3 +1,4 @@
+#include <cassert>
 #include "polynom.h"
 
 namespace groebner_basis {
@@ -20,6 +21,8 @@ Polynom<Field, Order> SPolynom(const Polynom<Field, Order>& f1, const Polynom<Fi
     auto lcm = LCM(f1.GetLargestTerm(), f2.GetLargestTerm());
     Term<Field> t1(f2.GetLargestTerm().GetCoefficient(), lcm / f1.GetLargestTerm().GetMonom()),
         t2(f1.GetLargestTerm().GetCoefficient(), lcm / f2.GetLargestTerm().GetMonom());
+
+    assert(f1.GetLargestTerm() * t1 == f2.GetLargestTerm() * t2);
 
     return f1 * t1 - f2 * t2;
 }
