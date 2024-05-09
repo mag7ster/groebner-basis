@@ -4,13 +4,16 @@
 #include <boost/safe_numerics/safe_integer_range.hpp>
 #include <boost/exception/exception.hpp>
 #include <boost/exception/diagnostic_information.hpp>
+#include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
 
-using namespace boost::safe_numerics;
+#include <boost/multiprecision/cpp_int.hpp>
 
 // using MyInt = boost::safe_numerics::safe_signed_range<-100, 100>;
-using MyInt = safe<std::int32_t>;
+using MyInt = boost::safe_numerics::safe<std::int64_t>;
+// using MyInt = std::int32_t;
 using Fraction = boost::rational<MyInt>;
 
 namespace gb = groebner_basis;
@@ -116,6 +119,11 @@ int main() {
     // for (const auto& f : g) {
     //     std::cout << f << "\n";
     // }
+
+    Fraction a;
+    std::cin >> a;
+
+    std::cout << a << "\n";
 
     PrintCyclic(4);
     PrintCyclic(5);

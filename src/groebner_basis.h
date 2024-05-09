@@ -84,7 +84,12 @@ public:
         unsigned int count_passes = 0;
         while (TryBuildGreobnerBasisForOnePass()) {
             count_passes += 1;
-            std::cout << "a\n";
+
+            std::cout << "CUR BASIS " << count_passes << "---------\n";
+            for (const auto &f : (*this)) {
+                std::cout << f << "\n\n";
+            }
+            std::cout << "--------------------------\n";
         }
 
         for (auto &f : (*this)) {
@@ -110,7 +115,7 @@ private:
         int i = 0;
         for (auto &g : (*this)) {
 
-            auto temp = res.ElementaryReduceWithRepeatBy(g);
+            auto temp = res.ElementaryReduceBy(g);
             if (temp) {
                 success = true;
                 res = temp.value();

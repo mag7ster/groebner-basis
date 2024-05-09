@@ -33,6 +33,14 @@ public:
         return degrees_->end();
     }
 
+    auto rbegin() const {  // NOLINT
+        return degrees_->rbegin();
+    }
+
+    auto rend() const {  // NOLINT
+        return degrees_->rend();
+    }
+
     Degree operator[](size_t index) const {
         if (index >= degrees_->size()) {
             return 0;

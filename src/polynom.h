@@ -1,10 +1,18 @@
 #include <algorithm>
+#include <cassert>
 #include <cstddef>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include "term.h"
 
 namespace groebner_basis {
+
+template <typename T>
+concept IsFraction = requires(T a) {
+    { a.numerator() };
+    { a.denominator() };
+};
 
 template <typename Field, typename Order = GrevLexOrder>
 class Polynom {
@@ -41,9 +49,11 @@ public:
 
     Polynom(Builder&& builder)
         : Polynom(OrderAndReduceVector(std::move(builder.GetMovedRawData()))) {
+        assert(IsCorrect());
     }
 
     Polynom(const Term& term) : Polynom(ReduceSimilar({term})) {
+        assert(IsCorrect());
     }
 
     const Term& GetLargestTerm() const {
@@ -147,17 +157,53 @@ public:
 
     std::optional<Polynom> ElementaryReduceBy(const Polynom& g) const {
 
-        std::optional<Term> res = FindDivisibleTerm(g.GetLargestTerm());
-        if (!res) {
+        std::optional<Term> optdiv = FindDivisibleTerm(g.GetLargestTerm());
+        if (!optdiv) {
             return std::nullopt;
         }
 
-        Term divisible_term = res.value();
+        Term divisible_term = optdiv.value();
         Term t = divisible_term / g.GetLargestTerm();
 
-        Polynom result = *this - t * g;
+        try {
+            Polynom result = *this - t * g;
+            return result;
+        } catch (...) {
+            std::cout << (*this) << "\n\n";
+            std::cout << g << "\n\n";
+            std::cout << divisible_term << "\n\n";
+            std::cout << t << "\n\n";
+            std::cout << t * g << "\n\n";
+            throw;
+        }
 
-        return result;
+        // if (result.Find(t * g.GetLargestTerm())) {
+
+        //     result = *this - t * g;
+
+        //     std::cout << (*this) << "\n\n";
+        //     std::cout << g << "\n\n";
+        //     std::cout << result << "\n\n";
+        //     std::cout << divisible_term << "\n\n";
+        //     std::cout << t << "\n\n";
+        //     std::cout << t * g << "\n\n";
+        //     std::cout << -(t * g).GetLargestTerm().GetCoefficient() << "\n";
+        //     std::cout << this->GetLargestTerm().GetCoefficient() -
+        //                      (t * g).GetLargestTerm().GetCoefficient()
+        //               << "\n";
+        //     throw std::runtime_error("AAAA?");
+        // }
+
+        // if constexpr (IsFraction<Field>) {
+        //     for (auto& e : result) {
+        //         if (e.GetCoefficient().denominator() != 1) {
+        //             std::cout << (*this) << "\n";
+        //             std::cout << g << "\n";
+        //             std::cout << result << "\n";
+        //             throw std::runtime_error("AAAA?");
+        //         }
+        //     }
+        // }
     }
 
     std::optional<Polynom> ElementaryReduceWithRepeatBy(const Polynom& g) const {
@@ -217,15 +263,48 @@ private:
 
     Polynom(std::vector<Term>&& prepared_vec)
         : data_(std::make_shared<const std::vector<Term>>(std::move(prepared_vec))) {
+        assert(IsCorrect());
     }
 
     std::optional<Term> FindDivisibleTerm(const Term& divisor) const {
+
+        auto it = std::find_if(this->begin(), this->end(),
+                               [&](const Term& t) { return t.IsDivisibleBy(divisor); });
+
+        if (it == this->end()) {
+            return std::nullopt;
+        }
+        return *it;
+    }
+
+    bool Find(const Monom& m) const {
         for (const auto& t : (*this)) {
-            if (t.IsDivisibleBy(divisor)) {
-                return t;
+            if (t.GetMonom() == m) {
+                return true;
             }
         }
-        return std::nullopt;
+        return false;
+    }
+
+    bool IsCorrect() {
+        if (IsZero()) {
+            return true;
+        }
+
+        for (auto it = begin() + 1; it != end(); ++it) {
+            assert(Order()(*(it - 1), *it));
+        }
+        for (auto it = begin(); it != end(); ++it) {
+            for (auto it2 = it + 1; it2 != end(); ++it2) {
+                assert(it->GetMonom() != it2->GetMonom());
+            }
+        }
+
+        for (auto it = begin(); it != end(); ++it) {
+            assert(it->GetCoefficient() != Field(0));
+        }
+
+        return true;
     }
 
     std::shared_ptr<const std::vector<Term>> data_;
