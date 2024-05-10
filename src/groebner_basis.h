@@ -40,6 +40,14 @@ public:
         return data_.size();
     }
 
+    bool operator==(const PolynomialsSet &other) {
+        return data_ == other.data_;
+    }
+
+    bool operator!=(const PolynomialsSet &other) {
+        return !(*this == other);
+    }
+
     void Add(const Polynom &poly) {
         data_.emplace_back(poly);
     }
@@ -54,6 +62,10 @@ public:
     void Erase(const Polynom &poly) {
         auto it = std::find(data_.begin(), data_.end(), poly);
         Erase(it);
+    }
+
+    void Clear() {
+        data_.clear();
     }
 
     std::optional<Polynom> Reduce(const Polynom &f) const {
@@ -84,17 +96,11 @@ public:
         unsigned int count_passes = 0;
         while (TryBuildGreobnerBasisForOnePass()) {
             count_passes += 1;
-
-            std::cout << "CUR BASIS " << count_passes << "---------\n";
-            for (const auto &f : (*this)) {
-                std::cout << f << "\n\n";
-            }
-            std::cout << "--------------------------\n";
         }
 
-        for (auto &f : (*this)) {
-            f = f * Term<Field>(Field(1) / f.GetLargestTerm().GetCoefficient());
-        }
+        // for (auto &f : (*this)) {
+        //     f = f * Term<Field>(Field(1) / f.GetLargestTerm().GetCoefficient());
+        // }
 
         std::sort(begin(), end());
 
@@ -115,7 +121,7 @@ private:
         int i = 0;
         for (auto &g : (*this)) {
 
-            auto temp = res.ElementaryReduceBy(g);
+            auto temp = res.ElementaryReduceWithRepeatBy(g);
             if (temp) {
                 success = true;
                 res = temp.value();
@@ -157,9 +163,17 @@ private:
         std::vector<Polynom> r;
         r.reserve(Size() * (Size() - 1) / 2);
         for (auto it1 = begin(); it1 != end(); ++it1) {
-            for (auto it2 = it1 + 1; it2 != end(); ++it2) {
+            for (auto it2 = begin(); it2 != end(); ++it2) {
                 auto s = SPolynom(*it1, *it2);
                 auto r_ij = Reduce(s);
+
+                std::cout << "s " << s << "\n";
+
+                if (!r_ij) {
+                    std::cout << "r no\n";
+                } else {
+                    std::cout << "r " << r_ij.value() << "\n";
+                }
 
                 if (r_ij && !r_ij.value().IsZero()) {
                     r.emplace_back(r_ij.value());

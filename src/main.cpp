@@ -1,15 +1,9 @@
 #include "groebner_basis.h"
 #include <boost/rational.hpp>
 #include <boost/safe_numerics/safe_integer.hpp>
-#include <boost/safe_numerics/safe_integer_range.hpp>
-#include <boost/exception/exception.hpp>
-#include <boost/exception/diagnostic_information.hpp>
 #include <cassert>
-#include <cstddef>
-#include <cstdint>
+#include <fstream>
 #include <iostream>
-
-#include <boost/multiprecision/cpp_int.hpp>
 
 // using MyInt = boost::safe_numerics::safe_signed_range<-100, 100>;
 using MyInt = boost::safe_numerics::safe<std::int64_t>;
@@ -18,119 +12,169 @@ using Fraction = boost::rational<MyInt>;
 
 namespace gb = groebner_basis;
 
-void PrintCyclic(size_t n) {
+// void PrintCyclic(size_t n) {
 
-    gb::PolynomialsSet<Fraction, gb::GrevLexOrder> s;
+//     gb::PolynomialsSet<Fraction, gb::GrevLexOrder> s;
 
-    for (size_t i = 1; i < n; ++i) {
-        // gb::Polynom<Fraction>::Builder builder;
+//     for (size_t i = 1; i < n; ++i) {
+//         // gb::Polynom<Fraction>::Builder builder;
 
-        std::vector<gb::Monom::Degree> degrees(n, 0);
-        std::fill(degrees.begin(), degrees.begin() + i, 1);
+//         std::vector<gb::Monom::Degree> degrees(n, 0);
+//         std::fill(degrees.begin(), degrees.begin() + i, 1);
 
-        gb::Polynom<Fraction, gb::GrevLexOrder> poly;
+//         gb::Polynom<Fraction, gb::GrevLexOrder> poly;
 
-        for (size_t j = 0; j < n; ++j) {
+//         for (size_t j = 0; j < n; ++j) {
 
-            poly = poly + gb::Term<Fraction>(Fraction(1), gb::BuildMonomFromVectorDegrees(degrees));
-            degrees[j] = 0;
-            degrees[(j + i) % n] = 1;
-        }
+//             poly = poly + gb::Term<Fraction>(Fraction(1),
+//             gb::BuildMonomFromVectorDegrees(degrees)); degrees[j] = 0; degrees[(j + i) % n] = 1;
+//         }
 
-        s.Add(poly);
+//         s.Add(poly);
+//     }
+
+//     std::vector<gb::Monom::Degree> degrees(n, 1);
+//     gb::Polynom<Fraction, gb::GrevLexOrder> poly =
+//         gb::Term<Fraction>(Fraction(1), gb::BuildMonomFromVectorDegrees(degrees));
+//     poly = poly + gb::Term<Fraction>(Fraction(-1), {});
+
+//     s.Add(poly);
+
+//     std::cout << "Cyclic " << n << " \n";
+//     for (auto& p : s) {
+//         std::cout << p << "\n";
+//     }
+//     std::cout << "\n";
+
+//     try {
+
+//         s.BuildGreobnerBasis();
+//         for (auto& p : s) {
+//             std::cout << p << "\n";
+//         }
+//         std::cout << "\n";
+
+//     } catch (...) {
+//         std::cerr << boost::current_exception_diagnostic_information();
+//     }
+// }
+
+void Check(gb::PolynomialsSet<Fraction, gb::GrevLexOrder>& find,
+           gb::PolynomialsSet<Fraction, gb::GrevLexOrder>& ans) {
+
+    std::cout << "test\n";
+    for (auto& f : find) {
+        std::cout << f << "\n";
     }
 
-    std::vector<gb::Monom::Degree> degrees(n, 1);
-    gb::Polynom<Fraction, gb::GrevLexOrder> poly =
-        gb::Term<Fraction>(Fraction(1), gb::BuildMonomFromVectorDegrees(degrees));
-    poly = poly + gb::Term<Fraction>(Fraction(-1), {});
+    find.BuildGreobnerBasis();
+    std::sort(ans.begin(), ans.end());
 
-    s.Add(poly);
-
-    std::cout << "Cyclic " << n << " \n";
-    for (auto &p : s) {
-        std::cout << p << "\n";
+    std::cout << "test groebner\n";
+    for (auto& f : find) {
+        std::cout << f << "\n";
     }
-    std::cout << "\n";
 
-    try {
-
-        s.BuildGreobnerBasis();
-        for (auto &p : s) {
-            std::cout << p << "\n";
-        }
-        std::cout << "\n";
-
-    } catch (...) {
-        std::cerr << boost::current_exception_diagnostic_information();
+    std::cout << "ans\n";
+    for (auto& f : ans) {
+        std::cout << f << "\n";
     }
+    assert(find == ans);
 }
 
 int main() {
-    // groebner_basis::Polynom<Fraction> a =
-    //     groebner_basis::Polynom<Fraction>::Builder().AddTerm(1, {2, 3}).AddTerm(4, {5,
-    //     6}).AddTerm(
-    //         4, {5, 6});
-    // groebner_basis::Monom m1({1, 2, 3, 0, 0});
-    // groebner_basis::Term<Fraction> t1(1, {2, 3}), t2(2, {3, 4});
-    // groebner_basis::Polynom<Fraction> b = t1;
-    // std::cout << m1 << "\n";
-    // std::cout << t1 << "\n";
-    // std::cout << t2 << "\n";
-    // std::cout << groebner_basis::LexOrder()(t1, t2) << "\n";
-    // std ::cout << t2.IsDivisibleBy(t1) << "\n";
 
-    // std ::cout << a << "\n";
-    // std ::cout << b << "\n";
-    // std::cout << a + b << "\n";
+    int state;
+    std::string str;
 
-    // std::cout << a * b << "\n";
-    // std::cout << a - b << "\n";
+    gb::PolynomialsSet<Fraction, gb::GrevLexOrder> find, ans;
 
-    // std::cout << a * t2 << "\n";
-    // std::cout << t2 * a << "\n";
+    std::ifstream file("/home/mukar/groebner-basis/tests.txt");
 
-    // std::cout << a + t2 << "\n";
-    // std::cout << t2 + a << "\n";
+    while (file >> str) {
+        // std::cout << str << "\n";
 
-    // std::cout << a - t2 << "\n";
-    // std::cout << t2 - a << "\n";
+        if (str == "test") {
+            state = 0;
+            continue;
+        }
+        if (str == "Groebner") {
+            state = 1;
+            continue;
+        }
+        if (str == "calc") {
+            Check(find, ans);
+            find.Clear();
+            ans.Clear();
+            std::cout << "A\n";
+            continue;
+        }
 
-    // std::cout << "Self -\n";
-    // std::cout << a - a << "\n";
+        std::stringstream ss;
+        ss << str;
 
-    // std::cout << "Elem\n";
-    // auto res = a.ElementaryReduceBy(a);
-    // std::cout << res.value() << "\n";
+        gb::Polynom<Fraction, gb::GrevLexOrder> poly;
 
-    // groebner_basis::PolynomialsSet g({a, b});
-    // auto res1 = groebner_basis::PolynomialsSet({a, b}).Reduce(a);
-    // std::cout << res1.value() << "\n";
+        Fraction frac = 1;
+        std::vector<gb::Monom::Degree> degs(3, 0);
+        int sign = 1;
 
-    // std::cout << t1.GetMonom() << " | " << t2.GetMonom() << "\n";
-    // auto lol = groebner_basis::LCM(t1.GetMonom(), t2.GetMonom());
-    // std::cout << lol << "\n" << lol / t1.GetMonom() << "\n" << lol / t2.GetMonom() << "\n";
+        if (ss.peek() == '-') {
+            frac = 0;
+        }
 
-    // std::cout << a << " | " << b << "\n";
-    // std::cout << groebner_basis::SPolynom(a, b) << "\n";
+        while (ss.good()) {
+            if (ss.peek() == '-') {
+                poly =
+                    poly + gb::Term<Fraction>(sign * frac, gb::BuildMonomFromVectorDegrees(degs));
 
-    // g.BuildGreobnerBasis();
-    // std::cout << "Greobner\n";
-    // for (const auto& f : g) {
-    //     std::cout << f << "\n";
-    // }
+                ss.get();
 
-    Fraction a;
-    std::cin >> a;
+                frac = 1;
+                degs = {0, 0, 0};
+                sign = -1;
 
-    std::cout << a << "\n";
+            } else if (ss.peek() == '+') {
+                poly =
+                    poly + gb::Term<Fraction>(sign * frac, gb::BuildMonomFromVectorDegrees(degs));
 
-    PrintCyclic(4);
-    PrintCyclic(5);
+                ss.get();
 
-    // for (int i = 2; i < 7; ++i) {
-    //     PrintCyclic(i);
-    // }
+                frac = 1;
+                degs = {0, 0, 0};
+                sign = 1;
+
+            } else if (ss.peek() == 'x' || ss.peek() == 'y' || ss.peek() == 'z') {
+
+                char c = ss.get();
+
+                gb::Monom::Degree deg = 1;
+
+                if (ss.peek() == '^') {
+                    ss.get();
+                    deg = ss.get();
+                    deg -= '0';
+                }
+
+                degs[c - 'x'] = deg;
+
+            } else if (std::isdigit(ss.peek())) {
+                ss >> frac;
+            }
+        }
+
+        poly = poly + gb::Term<Fraction>(sign * frac, gb::BuildMonomFromVectorDegrees(degs));
+
+        if (state == 0) {
+            find.Add(poly);
+        } else {
+            ans.Add(poly);
+        }
+    }
+    file.close();
+
+    // PrintCyclic(4);
+    // PrintCyclic(5);
 
     return 0;
 }

@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <iostream>
 #include <memory>
 #include <optional>
 #include "term.h"
@@ -114,7 +113,7 @@ public:
     }
 
     friend bool operator==(const Polynom& first, const Polynom& second) {
-        return *first == *second.data_;
+        return *first.data_ == *second.data_;
     }
 
     friend bool operator!=(const Polynom& first, const Polynom& second) {
@@ -165,45 +164,7 @@ public:
         Term divisible_term = optdiv.value();
         Term t = divisible_term / g.GetLargestTerm();
 
-        try {
-            Polynom result = *this - t * g;
-            return result;
-        } catch (...) {
-            std::cout << (*this) << "\n\n";
-            std::cout << g << "\n\n";
-            std::cout << divisible_term << "\n\n";
-            std::cout << t << "\n\n";
-            std::cout << t * g << "\n\n";
-            throw;
-        }
-
-        // if (result.Find(t * g.GetLargestTerm())) {
-
-        //     result = *this - t * g;
-
-        //     std::cout << (*this) << "\n\n";
-        //     std::cout << g << "\n\n";
-        //     std::cout << result << "\n\n";
-        //     std::cout << divisible_term << "\n\n";
-        //     std::cout << t << "\n\n";
-        //     std::cout << t * g << "\n\n";
-        //     std::cout << -(t * g).GetLargestTerm().GetCoefficient() << "\n";
-        //     std::cout << this->GetLargestTerm().GetCoefficient() -
-        //                      (t * g).GetLargestTerm().GetCoefficient()
-        //               << "\n";
-        //     throw std::runtime_error("AAAA?");
-        // }
-
-        // if constexpr (IsFraction<Field>) {
-        //     for (auto& e : result) {
-        //         if (e.GetCoefficient().denominator() != 1) {
-        //             std::cout << (*this) << "\n";
-        //             std::cout << g << "\n";
-        //             std::cout << result << "\n";
-        //             throw std::runtime_error("AAAA?");
-        //         }
-        //     }
-        // }
+        return *this - t * g;
     }
 
     std::optional<Polynom> ElementaryReduceWithRepeatBy(const Polynom& g) const {
