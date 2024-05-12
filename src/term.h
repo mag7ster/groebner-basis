@@ -5,7 +5,7 @@ namespace groebner_basis {
 template <typename Field>
 class Term : public Monom {
 public:
-    Term(const Field& coefficient, const std::initializer_list<Degree>& degrees_list)
+    Term(const Field& coefficient, std::initializer_list<Degree> degrees_list)
         : Monom(degrees_list), coef_(coefficient) {
     }
 

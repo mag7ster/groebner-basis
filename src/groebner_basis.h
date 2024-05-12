@@ -1,5 +1,4 @@
 #include <cstddef>
-#include <iostream>
 #include <vector>
 #include "functions.h"
 
@@ -12,27 +11,27 @@ class PolynomialsSet {
 
     using Container = std::vector<Polynom>;
     using Iterator = typename Container::iterator;
+    using ConstIterator = typename Container::const_iterator;
 
 public:
-    PolynomialsSet(const std::initializer_list<Polynom> &poly_list) : data_(poly_list) {
+    PolynomialsSet(std::initializer_list<Polynom> poly_list) : data_(poly_list) {
     }
 
-    PolynomialsSet() {
-    }
+    PolynomialsSet() = default;
 
-    auto begin() {  // NOLINT
+    Iterator begin() {  // NOLINT
         return data_.begin();
     }
 
-    auto begin() const {  // NOLINT
+    ConstIterator begin() const {  // NOLINT
         return data_.begin();
     }
 
-    auto end() {  // NOLINT
+    Iterator end() {  // NOLINT
         return data_.end();
     }
 
-    auto end() const {  // NOLINT
+    ConstIterator end() const {  // NOLINT
         return data_.end();
     }
 
@@ -40,16 +39,32 @@ public:
         return data_.size();
     }
 
-    bool operator==(const PolynomialsSet &other) {
+    bool operator==(const PolynomialsSet &other) const {
         return data_ == other.data_;
     }
 
-    bool operator!=(const PolynomialsSet &other) {
+    bool operator!=(const PolynomialsSet &other) const {
         return !(*this == other);
     }
 
     void Add(const Polynom &poly) {
+        if (poly.IsZero()) {
+            return;
+        }
+
         data_.emplace_back(poly);
+        data_.back() =
+            data_.back() * Term<Field>(Field(1) / data_.back().GetLargestTerm().GetCoefficient());
+    }
+
+    void Add(Polynom &&poly) {
+        if (poly.IsZero()) {
+            return;
+        }
+
+        data_.emplace_back(std::move(poly));
+        data_.back() =
+            data_.back() * Term<Field>(Field(1) / data_.back().GetLargestTerm().GetCoefficient());
     }
 
     void Erase(Iterator it) {
@@ -84,27 +99,36 @@ public:
         return res;
     }
 
-    unsigned int AutoReduction() {
-        unsigned int count_passes = 0;
-        while (TryAutoReductionForOnePass()) {
-            count_passes += 1;
+    void AutoReduction() {
+        auto it = begin();
+        for (size_t i = 0; i < Size(); ++i, ++it) {
+
+            auto f = *it;
+            this->Erase(it);
+            auto temp = this->Reduce(f);
+            if (!temp) {
+                this->AddAt(it, f);
+            } else {
+                if (!temp.value().IsZero()) {
+                    this->AddAt(it, temp.value());
+                } else {
+                    it--;
+                    i--;
+                }
+            }
         }
-        return count_passes;
+
+        for (auto &f : (*this)) {
+            f = f * Term<Field>(Field(1) / f.GetLargestTerm().GetCoefficient());
+        }
     }
 
-    unsigned int BuildGreobnerBasis() {
-        unsigned int count_passes = 0;
-        while (TryBuildGreobnerBasisForOnePass()) {
-            count_passes += 1;
-        }
+    void BuildGreobnerBasis() {
 
-        // for (auto &f : (*this)) {
-        //     f = f * Term<Field>(Field(1) / f.GetLargestTerm().GetCoefficient());
-        // }
-
+        BuildUnReducedGroebnerBasis();
+        Minimize();
+        AutoReduction();
         std::sort(begin(), end());
-
-        return count_passes;
     }
 
 private:
@@ -113,12 +137,30 @@ private:
         std::swap(*it, data_.back());
     }
 
+    void Minimize() {
+
+        for (auto it1 = begin(); it1 != end(); ++it1) {
+            bool remove = false;
+            std::swap(*it1, *begin());
+
+            for (auto it2 = begin() + 1; it2 != end(); ++it2) {
+                if (data_.front().GetLargestTerm().IsDivisibleBy(it2->GetLargestTerm())) {
+                    remove = true;
+                }
+            }
+
+            if (remove) {
+                Erase(begin());
+                it1--;
+            }
+        }
+    }
+
     std::optional<Polynom> TryReductionForOnePass(const Polynom &f) const {
 
         Polynom res = f;
         bool success = false;
 
-        int i = 0;
         for (auto &g : (*this)) {
 
             auto temp = res.ElementaryReduceWithRepeatBy(g);
@@ -126,7 +168,6 @@ private:
                 success = true;
                 res = temp.value();
             }
-            ++i;
         }
 
         if (!success) {
@@ -136,58 +177,25 @@ private:
         return res;
     }
 
-    bool TryAutoReductionForOnePass() {
+    void BuildUnReducedGroebnerBasis() {
 
-        bool success = false;
+        for (size_t i = 0; i < Size(); ++i) {
+            for (size_t j = 0; j < i; ++j) {
+                auto s = SPolynom(data_[i], data_[j]);
 
-        auto it = this->begin();
-        for (size_t i = 0; i < Size(); ++i, ++it) {
-
-            auto f = *it;
-            this->Erase(it);
-            auto temp = this->Reduce(f);
-            if (!temp) {
-                this->AddAt(it, f);
-            } else {
-                success = true;
-                if (!temp.value().IsZero()) {
-                    this->AddAt(it, temp.value());
+                if (s.IsZero()) {
+                    continue;
                 }
-            }
-        }
 
-        return success;
-    }
-
-    bool TryBuildGreobnerBasisForOnePass() {
-        std::vector<Polynom> r;
-        r.reserve(Size() * (Size() - 1) / 2);
-        for (auto it1 = begin(); it1 != end(); ++it1) {
-            for (auto it2 = begin(); it2 != end(); ++it2) {
-                auto s = SPolynom(*it1, *it2);
                 auto r_ij = Reduce(s);
 
-                std::cout << "s " << s << "\n";
-
                 if (!r_ij) {
-                    std::cout << "r no\n";
-                } else {
-                    std::cout << "r " << r_ij.value() << "\n";
-                }
-
-                if (r_ij && !r_ij.value().IsZero()) {
-                    r.emplace_back(r_ij.value());
+                    Add(s);
+                } else if (!r_ij.value().IsZero()) {
+                    Add(r_ij.value());
                 }
             }
         }
-
-        for (const auto &f : r) {
-            Add(f);
-        }
-
-        AutoReduction();
-
-        return !r.empty();
     }
 
     Container data_;

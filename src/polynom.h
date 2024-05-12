@@ -4,14 +4,9 @@
 #include <memory>
 #include <optional>
 #include "term.h"
+#include <sstream>
 
 namespace groebner_basis {
-
-template <typename T>
-concept IsFraction = requires(T a) {
-    { a.numerator() };
-    { a.denominator() };
-};
 
 template <typename Field, typename Order = GrevLexOrder>
 class Polynom {
@@ -20,39 +15,39 @@ public:
 
     class Builder {
     public:
-        Builder&& AddTerm(const Field& coef,
-                          const std::initializer_list<Monom::Degree>& degrees_list) {
+        Builder& AddTerm(const Field& coef, std::initializer_list<Monom::Degree> degrees_list) {
 
             raw_data_.emplace_back(coef, degrees_list);
-            return std::move(*this);
+            return *this;
         }
 
-        Builder&& AddTerm(const Field& coef, const Monom& monom) {
+        Builder& AddTerm(const Field& coef, const Monom& monom) {
 
             raw_data_.emplace_back(coef, monom);
-            return std::move(*this);
+            return *this;
         }
 
-        friend class Polynom;
+        Polynom BuildPolynom() {
+            return Polynom(OrderAndReduceVector(std::move(raw_data_)));
+        }
 
     private:
-        std::vector<Term>&& GetMovedRawData() {
-            return std::move(raw_data_);
-        }
-
         std::vector<Term> raw_data_;
     };
+    friend class Builder;
 
-    Polynom() : Polynom(std::vector<Term>()) {
-    }
+    Polynom() = default;
 
-    Polynom(Builder&& builder)
-        : Polynom(OrderAndReduceVector(std::move(builder.GetMovedRawData()))) {
+    Polynom(Builder&& builder) : Polynom(builder.BuildPolynom()) {
         assert(IsCorrect());
     }
 
     Polynom(const Term& term) : Polynom(ReduceSimilar({term})) {
         assert(IsCorrect());
+    }
+
+    static Polynom BuildFromString(const std::string& str) {
+        return ParseAndBuild(str);
     }
 
     const Term& GetLargestTerm() const {
@@ -227,6 +222,63 @@ private:
         assert(IsCorrect());
     }
 
+    static Polynom ParseAndBuild(const std::string& str) {  // works only with xyz
+        std::stringstream ss;
+        ss << str;
+
+        Polynom::Builder builder;
+
+        Field current_coef = 1;
+        std::vector<Monom::Degree> degs(3, 0);
+        int sign = 1;
+
+        if (ss.peek() == '-') {
+            current_coef = 0;
+        }
+
+        while (ss.good()) {
+            if (ss.peek() == '-') {
+                builder = builder.AddTerm(sign * current_coef, Monom::BuildFromVectorDegrees(degs));
+
+                ss.get();
+
+                current_coef = 1;
+                degs = {0, 0, 0};
+                sign = -1;
+
+            } else if (ss.peek() == '+') {
+                builder = builder.AddTerm(sign * current_coef, Monom::BuildFromVectorDegrees(degs));
+
+                ss.get();
+
+                current_coef = 1;
+                degs = {0, 0, 0};
+                sign = 1;
+
+            } else if (ss.peek() == 'x' || ss.peek() == 'y' || ss.peek() == 'z') {
+
+                char c = ss.get();
+
+                Monom::Degree deg = 1;
+
+                if (ss.peek() == '^') {
+                    ss.get();
+                    ss >> deg;
+                }
+
+                degs[c - 'x'] = deg;
+
+            } else if (std::isdigit(ss.peek())) {
+                int num;
+                ss >> num;
+                current_coef = num;
+            }
+        }
+
+        builder = builder.AddTerm(sign * current_coef, Monom::BuildFromVectorDegrees(degs));
+        return Polynom(std::move(builder));
+    }
+
     std::optional<Term> FindDivisibleTerm(const Term& divisor) const {
 
         auto it = std::find_if(this->begin(), this->end(),
@@ -253,22 +305,28 @@ private:
         }
 
         for (auto it = begin() + 1; it != end(); ++it) {
-            assert(Order()(*(it - 1), *it));
+            if (!Order()(*(it - 1), *it)) {
+                return false;
+            }
         }
         for (auto it = begin(); it != end(); ++it) {
             for (auto it2 = it + 1; it2 != end(); ++it2) {
-                assert(it->GetMonom() != it2->GetMonom());
+                if (it->GetMonom() == it2->GetMonom()) {
+                    return false;
+                }
             }
         }
 
         for (auto it = begin(); it != end(); ++it) {
-            assert(it->GetCoefficient() != Field(0));
+            if (it->GetCoefficient() == Field(0)) {
+                return false;
+            }
         }
 
         return true;
     }
 
-    std::shared_ptr<const std::vector<Term>> data_;
+    std::shared_ptr<const std::vector<Term>> data_ = std::make_shared<const std::vector<Term>>();
 };
 
 }  // namespace groebner_basis

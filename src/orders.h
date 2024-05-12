@@ -14,8 +14,8 @@ class RevLexOrder {
 public:
     bool operator()(const Monom &a, const Monom &b) const {
 
-        if (a.CountSignificantDegrees() != b.CountSignificantDegrees()) {
-            return a.CountSignificantDegrees() < b.CountSignificantDegrees();
+        if (a.FirstIndexAfterLastNonZeroDegree() != b.FirstIndexAfterLastNonZeroDegree()) {
+            return a.FirstIndexAfterLastNonZeroDegree() < b.FirstIndexAfterLastNonZeroDegree();
         }
 
         return std::lexicographical_compare(a.rbegin(), a.rend(), b.rbegin(), b.rend());

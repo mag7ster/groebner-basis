@@ -33,3 +33,5 @@ add_executable(bench ${BENCH_EXE})
 target_link_libraries(bench PRIVATE benchmark::benchmark benchmark::benchmark_main)
 
 add_executable(main ${SOURCE_EXE})
+
+add_executable(dev src/dev.cpp)

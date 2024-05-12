@@ -18,11 +18,14 @@ class Monom {
 public:
     using Degree = unsigned int;
 
-    Monom() : Monom(std::vector<Degree>()) {
+    Monom() = default;
+
+    explicit Monom(std::initializer_list<Degree> degrees_list)
+        : Monom(TrimTrailingZeros(degrees_list.begin(), degrees_list.end())) {
     }
 
-    explicit Monom(const std::initializer_list<Degree>& degrees_list)
-        : Monom(TrimTrailingZeros(degrees_list.begin(), degrees_list.end())) {
+    static Monom BuildFromVectorDegrees(const std::vector<Monom::Degree>& vector_degrees) {
+        return Monom(Monom::TrimTrailingZeros(vector_degrees.begin(), vector_degrees.end()));
     }
 
     auto begin() const {  // NOLINT
@@ -46,7 +49,8 @@ public:
             return 0;
         }
         return degrees_->at(index);
-    }
+    }  // Я не знаю, как сделать это по другому. Если я буду возвращать const vector&, то не смогу
+       // заифать, чтобы возвращался 0 когда степень больше чем есть в векторе
 
     bool operator==(const Monom& other) const {
         return *degrees_ == *other.degrees_;
@@ -58,18 +62,18 @@ public:
 
     bool IsDivisibleBy(const Monom& divisor) const {
 
-        if (CountSignificantDegrees() < divisor.CountSignificantDegrees()) {
+        if (FirstIndexAfterLastNonZeroDegree() < divisor.FirstIndexAfterLastNonZeroDegree()) {
             return false;
         }
 
-        return std::mismatch(divisor.begin(), divisor.end(), this->begin(), this->end(),
+        return std::mismatch(divisor.begin(), divisor.end(), begin(),
                              [](Degree divisor_degree, Degree divident_degree) {
                                  return divisor_degree <= divident_degree;
                              })
                    .first == divisor.end();
     }
 
-    size_t CountSignificantDegrees() const {
+    size_t FirstIndexAfterLastNonZeroDegree() const {
         return degrees_->size();
     }
 
@@ -77,8 +81,8 @@ public:
 
         assert(IsDivisibleBy(other));
 
-        size_t size = CountSignificantDegrees();
-        if (CountSignificantDegrees() == other.CountSignificantDegrees()) {
+        size_t size = FirstIndexAfterLastNonZeroDegree();
+        if (FirstIndexAfterLastNonZeroDegree() == other.FirstIndexAfterLastNonZeroDegree()) {
             size = CalcQuotientSize(other);
         }
 
@@ -92,7 +96,8 @@ public:
 
     Monom operator*(const Monom& other) const {
 
-        size_t size = std::max(CountSignificantDegrees(), other.CountSignificantDegrees());
+        size_t size =
+            std::max(FirstIndexAfterLastNonZeroDegree(), other.FirstIndexAfterLastNonZeroDegree());
 
         std::vector<Degree> newdegrees(size);
         for (size_t i = 0; i < size; ++i) {
@@ -103,8 +108,6 @@ public:
     }
 
     friend Monom LCM(const Monom& m1, const Monom& m2);
-
-    friend Monom BuildMonomFromVectorDegrees(const std::vector<Degree>& vector_degrees);
 
 private:
     size_t CalcQuotientSize(const Monom& other) const {
@@ -141,12 +144,9 @@ private:
         return degrees;
     }
 
-    std::shared_ptr<const std::vector<Degree>> degrees_;
+    std::shared_ptr<const std::vector<Degree>> degrees_ =
+        std::make_shared<const std::vector<Degree>>();
 };
-
-Monom BuildMonomFromVectorDegrees(const std::vector<Monom::Degree>& vector_degrees) {
-    return Monom(Monom::TrimTrailingZeros(vector_degrees.begin(), vector_degrees.end()));
-}
 
 template <typename Stream>
 Stream& operator<<(Stream& stream, const Monom& monom) {

@@ -3,9 +3,10 @@
 
 namespace groebner_basis {
 
-Monom LCM(const Monom& m1, const Monom& m2) {
+inline Monom LCM(const Monom& m1, const Monom& m2) {
 
-    size_t size = std::max(m1.CountSignificantDegrees(), m2.CountSignificantDegrees());
+    size_t size =
+        std::max(m1.FirstIndexAfterLastNonZeroDegree(), m2.FirstIndexAfterLastNonZeroDegree());
     std::vector<Monom::Degree> lcm(size);
 
     for (size_t i = 0; i < size; ++i) {
