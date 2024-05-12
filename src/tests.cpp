@@ -2,11 +2,13 @@
 #include "types.h"
 
 #include <gtest/gtest.h>
+#include <boost/rational.hpp>
 #include <fstream>
 
 namespace gb = groebner_basis;
 
 using ModInt = gb::Modulus<std::int64_t, 998244353>;
+using Fraction = boost::rational<std::int64_t>;
 
 void Check(gb::PolynomialsSet<ModInt>& find, gb::PolynomialsSet<ModInt>& ans) {
     find.BuildGreobnerBasis();
