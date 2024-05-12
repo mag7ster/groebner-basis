@@ -52,7 +52,12 @@ void CheckFromFile() {
     }
 }
 
+void RunPythonGenerator() {
+    system("python3 ../generate_tests.py");
+}
+
 TEST(GroebnerBasisTest, Stress) {
+    RunPythonGenerator();
     CheckFromFile();
 }
 
