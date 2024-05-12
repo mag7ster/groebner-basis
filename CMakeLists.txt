@@ -5,7 +5,6 @@ project(groebner_basis)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-set(SOURCE_EXE src/main.cpp)
 set(TESTS_EXE src/tests.cpp)
 set(BENCH_EXE src/bench.cpp)
 # set(GROEBNER_LIB src/groebner_basis.cpp)
@@ -31,7 +30,3 @@ gtest_discover_tests(tests)
 find_package(benchmark CONFIG REQUIRED)
 add_executable(bench ${BENCH_EXE})
 target_link_libraries(bench PRIVATE benchmark::benchmark benchmark::benchmark_main)
-
-add_executable(main ${SOURCE_EXE})
-
-add_executable(dev src/dev.cpp)
