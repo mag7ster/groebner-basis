@@ -44,13 +44,12 @@ public:
         return degrees_->rend();
     }
 
-    Degree operator[](size_t index) const {
+    Degree Deg(size_t index) const {
         if (index >= degrees_->size()) {
             return 0;
         }
-        return degrees_->at(index);
-    }  // Я не знаю, как сделать это по другому. Если я буду возвращать const vector&, то не смогу
-       // заифать, чтобы возвращался 0 когда степень больше чем есть в векторе
+        return (*degrees_)[index];
+    }
 
     bool operator==(const Monom& other) const {
         return *degrees_ == *other.degrees_;
@@ -88,7 +87,7 @@ public:
 
         std::vector<Degree> newdegrees(size);
         for (size_t i = 0; i < size; ++i) {
-            newdegrees[i] = (*this)[i] - other[i];
+            newdegrees[i] = Deg(i) - other.Deg(i);
         }
 
         return Monom(std::move(newdegrees));
@@ -101,7 +100,7 @@ public:
 
         std::vector<Degree> newdegrees(size);
         for (size_t i = 0; i < size; ++i) {
-            newdegrees[i] = (*this)[i] + other[i];
+            newdegrees[i] = Deg(i) + other.Deg(i);
         }
 
         return Monom(std::move(newdegrees));

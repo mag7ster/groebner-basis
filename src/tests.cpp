@@ -5,6 +5,8 @@
 #include <boost/rational.hpp>
 #include <fstream>
 
+namespace {
+
 namespace gb = groebner_basis;
 
 using ModInt = gb::Modulus<std::int64_t, 998244353>;
@@ -53,6 +55,7 @@ void CheckFromFile() {
         }
     }
 }
+}  // namespace
 
 TEST(GroebnerBasisTest, Stress) {
     CheckFromFile();

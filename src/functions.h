@@ -10,7 +10,7 @@ inline Monom LCM(const Monom& m1, const Monom& m2) {
     std::vector<Monom::Degree> lcm(size);
 
     for (size_t i = 0; i < size; ++i) {
-        lcm[i] = std::max(m1[i], m2[i]);
+        lcm[i] = std::max(m1.Deg(i), m2.Deg(i));
     }
 
     return Monom(std::move(lcm));

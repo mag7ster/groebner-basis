@@ -5,10 +5,12 @@
 #include <benchmark/benchmark.h>
 #include "types.h"
 
+namespace {
+
 namespace bm = benchmark;
 namespace gb = groebner_basis;
 
-using ModInt = gb::Modulus<std::int64_t, 998244353>;
+using ModInt = gb::Modulus<std::int32_t, 239>;
 
 static gb::PolynomialsSet<ModInt> BuildCyclic(int n) {
     gb::PolynomialsSet<ModInt> s;
@@ -51,6 +53,8 @@ static void Cyclic(bm::State &state) {
         bm::DoNotOptimize(temp);
     }
 }
+
+}  // namespace
 
 BENCHMARK(Cyclic)->Arg(4)->Iterations(1000)->Unit(bm::kMillisecond);
 BENCHMARK(Cyclic)->Arg(5)->Iterations(10)->Unit(bm::kMillisecond);

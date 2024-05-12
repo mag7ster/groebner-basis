@@ -6,13 +6,9 @@ namespace groebner_basis {
 template <typename T, T Tmod>
 class Modulus {
 public:
-    Modulus() : value_(0) {
-    }
+    Modulus() = default;
 
-    Modulus(T value) : value_(value % Tmod) {
-        if (value_ < 0) {
-            value_ += Tmod;
-        }
+    Modulus(T value) : value_(Mod(value)) {
     }
 
     Modulus operator-() const {
@@ -34,10 +30,6 @@ public:
     Modulus& operator/=(Modulus other) {
         return (*this) = (*this) / other;
     }
-
-    // operator bool() const {
-    //     return value_;
-    // }
 
     friend Modulus operator+(Modulus first, Modulus second) {
         return Modulus((first.value_ + second.value_) % Tmod);
@@ -86,6 +78,14 @@ public:
     }
 
 private:
+    static T Mod(T value) {
+        value %= Tmod;
+        if (value < 0) {
+            value += Tmod;
+        }
+        return value;
+    }
+
     Modulus BinPow(T degree) const {
         Modulus result = 1, current = (*this);
         while (degree != 0) {
@@ -103,6 +103,6 @@ private:
         return BinPow(Tmod - 2);
     }
 
-    T value_;
+    T value_ = 0;
 };
 }  // namespace groebner_basis
