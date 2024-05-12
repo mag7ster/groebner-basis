@@ -22,7 +22,6 @@ def print_G(G):
     for poly in G:
         print_poly(poly)
 
-
 for i in range(1000):
 
     f.write("test\n")
