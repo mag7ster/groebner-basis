@@ -3,7 +3,21 @@
 
 namespace groebner_basis {
 
+template <typename T>
+constexpr bool IsPrime(T number) {
+    for (T i = 2; i * i <= number; ++i) {
+        if (number % i == 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template <typename T, T Tnumber>
+concept IsPrimeV = IsPrime(Tnumber);
+
 template <typename T, T Tmod>
+    requires IsPrimeV<T, Tmod>
 class Modulus {
 public:
     Modulus() = default;

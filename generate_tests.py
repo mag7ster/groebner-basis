@@ -34,7 +34,6 @@ for i in range(1000):
 
     f.write("Groebner\n")
     GR = groebner(G, x, y, z, domain=GF(998244353), order='grevlex')
-    # print(GR)
     print_G(GR)
 
     f.write("calc\n")
