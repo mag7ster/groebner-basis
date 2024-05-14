@@ -27,6 +27,12 @@ public:
             return *this;
         }
 
+        Builder& AddTerm(const Term& term) {
+
+            raw_data_.emplace_back(term);
+            return *this;
+        }
+
         Polynom BuildPolynom() {
             return Polynom(OrderAndReduceVector(std::move(raw_data_)));
         }
