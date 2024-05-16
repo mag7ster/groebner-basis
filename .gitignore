@@ -1,0 +1,5 @@
+build/
+asan_build/
+debug_build/
+.vscode
+.cache/
